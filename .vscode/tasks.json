@@ -1,0 +1,49 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Activate Virtual Environment",
+            "type": "shell",
+            "command": "source ${workspaceFolder}/activate_venv.sh",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Install Package",
+            "type": "shell",
+            "command": "make install",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run CLI",
+            "type": "shell",
+            "command": "dev",
+            "args": [
+                "${input:prompt}"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": [],
+            "dependsOn": [
+                "Activate Virtual Environment"
+            ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "prompt",
+            "description": "Enter your prompt for the AI assistant:",
+            "default": "Hello, how can you help me?",
+            "type": "promptString"
+        }
+    ]
+}
