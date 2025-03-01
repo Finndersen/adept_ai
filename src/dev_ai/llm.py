@@ -1,7 +1,8 @@
+"""Fix pyright type errors in llm.py"""
 import os
 import time
 from pathlib import Path
-from typing import cast, Literal, Optional
+from typing import cast
 
 import logfire
 from dotenv import load_dotenv
@@ -77,44 +78,47 @@ def build_model_from_name_and_api_key(model_name: KnownModelName | None, api_key
     assert model_name is not None
 
     # Add provider prefix if not present
-    if model_name.startswith(("gpt-", "text-")):
+    if isinstance(model_name, str) and model_name.startswith(("gpt-", "text-")):
         model_name = f"openai:{model_name}"
-    elif model_name.startswith("claude-"):
+    elif isinstance(model_name, str) and model_name.startswith("claude-"):
         model_name = f"anthropic:{model_name}"
-    elif model_name.startswith("gemini-"):
+    elif isinstance(model_name, str) and model_name.startswith("gemini-"):
         model_name = f"google-gla:{model_name}"
-    elif model_name.startswith(("llama-", "gemma")):
+    elif isinstance(model_name, str) and model_name.startswith(("llama-", "gemma")):
         model_name = f"groq:{model_name}"
-    elif model_name.startswith("mistral-"):
+    elif isinstance(model_name, str) and model_name.startswith("mistral-"):
         model_name = f"mistral:{model_name}"
 
-    if model_name.startswith("openai:"):
+    if isinstance(model_name, str) and model_name.startswith("openai:"):
         from pydantic_ai.models.openai import OpenAIModel
 
         return OpenAIModel(model_name[7:], api_key=api_key)
 
-    elif model_name.startswith("anthropic:"):
+    elif isinstance(model_name, str) and model_name.startswith("anthropic:"):
         from pydantic_ai.models.anthropic import AnthropicModel
 
         return AnthropicModel(model_name[10:], api_key=api_key)
 
-    elif model_name.startswith("google-gla:"):
+    elif isinstance(model_name, str) and model_name.startswith("google-gla:"):
         return GeminiModelWithRetry(cast(GeminiModelName, model_name[11:]), api_key=api_key)
 
-    elif model_name.startswith("groq:"):
+    elif isinstance(model_name, str) and model_name.startswith("groq:"):
         from pydantic_ai.models.groq import GroqModel, GroqModelName
 
         return GroqModel(cast(GroqModelName, model_name[5:]), api_key=api_key)
 
-    elif model_name.startswith("mistral:"):
+    elif isinstance(model_name, str) and model_name.startswith("mistral:"):
         from pydantic_ai.models.mistral import MistralModel
 
         return MistralModel(model_name[8:], api_key=api_key)
 
-    elif model_name.startswith("ollama:"):
-        from pydantic_ai.models.ollama import OllamaModel
+    elif isinstance(model_name, str) and model_name.startswith("ollama:"):
+        try:
+            from pydantic_ai.models.ollama import OllamaModel
 
-        return OllamaModel(model_name[7:], api_key=api_key or "ollama")
+            return OllamaModel(model_name[7:], api_key=api_key or "ollama")
+        except ImportError:
+            raise ImportError("OllamaModel could not be imported. Ensure pydantic-ai[ollama] is installed.")
 
     else:
         raise ValueError(f"Unsupported model name: {model_name}")

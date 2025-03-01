@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Annotated, AsyncIterator
 
 from pydantic import BaseModel
@@ -7,7 +8,7 @@ from pydantic_ai.messages import ModelMessage
 from pydantic_ai.models import Model
 
 from dev_ai.deps import AgentDeps
-from dev_ai.tools import create_file, read_file, run_bash_command, search_web
+from dev_ai.tools import create_file, edit_file, fix_file_errors, read_file, run_bash_command, search_web
 
 
 class LLMResponse(BaseModel):
@@ -65,7 +66,7 @@ def get_agent_runner(model: Model, deps: AgentDeps) -> AgentRunner:
         deps_type=type(deps),
         system_prompt=get_system_prompt(deps.current_working_directory),
         result_type=LLMResponse,
-        tools=[search_web, run_bash_command, create_file, read_file],
+        tools=[search_web, run_bash_command, create_file, read_file, edit_file, fix_file_errors],
     )
     return AgentRunner(agent, deps=deps)
 
@@ -87,21 +88,55 @@ whos purpose is to help the user with their software development or general comp
 
 
 # EXAMPLES
-
+-------
 User: "list full paths of all python files"
-Assistant: run_bash_command(command="find . -name '*.py' -type f -print", destructive=False)
-User: <result from run_bash_command>
+Assistant: <call tool> run_bash_command(command="find . -name '*.py' -type f -print", destructive=False)
+Tool response: <result from run_bash_command>
 
-GOOD RESPONSE: I've run a command to list all python files in the current directory and its subdirectories.
-BAD RESPONSE: <repeats the output back to the user>
+GOOD: 
+Assistant: I've run a command to list all python files in the current directory and its subdirectories.
+BAD: 
+Assistant: <repeats the output back to the user>
+
+-------
+User: "Fix pyright typing errors"
+Assistant: <call tool> run_bash_command(command="python -m pyright", destructive=False)
+Tool response: 
+    /Users/finn.andersen/projects/dev_ai/src/dev_ai/llm.py:69:26 - error: Type "Literal['anthropic:claude-3-7-sonnet-latest']" is not assignable to declared type "KnownModelName | None"
+    Type "Literal['anthropic:claude-3-7-sonnet-latest']" is not assignable to type "KnownModelName | None"
+    ... (reportAssignmentType)
+  /Users/finn.andersen/projects/dev_ai/src/dev_ai/llm.py:82:22 - error: Type "LiteralString" is not assignable to declared type "KnownModelName | None"
+    Type "LiteralString" is not assignable to type "KnownModelName | None"
+    ... (reportAssignmentType)
+  /Users/finn.andersen/projects/dev_ai/src/dev_ai/llm.py:84:22 - error: Type "LiteralString" is not assignable to declared type "KnownModelName | None"
+    Type "LiteralString" is not assignable to type "KnownModelName | None"
+    ... (reportAssignmentType)
+    Type "LiteralString" is not assignable to type "KnownModelName | None"
+    ... (reportAssignmentType)
+  /Users/finn.andersen/projects/dev_ai/src/dev_ai/llm.py:117:18 - error: Import "pydantic_ai.models.ollama" could not be resolved (reportMissingImports)
+
+GOOD:
+Assistant: <call tool> fix_file_errors(file_path="src/dev_ai/agent.py", error_details="
+    Line 69: Type "Literal['anthropic:claude-3-7-sonnet-latest']" is not assignable to declared type "KnownModelName | None" (reportAssignmentType)
+    Line 82: Type "LiteralString" is not assignable to declared type "KnownModelName | None" (reportAssignmentType)
+    Line 84: Type "LiteralString" is not assignable to declared type "KnownModelName | None" (reportAssignmentType)
+    Line 117: Import "pydantic_ai.models.ollama" could not be resolved (reportMissingImports)")
+
+BAD:
+Assistant: <call tool> edit_file(file_path="src/dev_ai/agent.py", instructions="Change the type annotation for default_model in line 69, claude_3_5_haiku_latest in line 82 and claude_3_5_sonnet_latest in line 84")
+
+-------
 
 
 # CONTEXTUAL INFORMATION
 
 Current working directory: {current_working_directory}
+Directory listing:
+{directory_listing}
 
 """
 
 
 def get_system_prompt(current_working_directory: str) -> str:
-    return PROMPT_TEMPLATE.format(current_working_directory=current_working_directory)
+    directory_listing = "\n".join(sorted(p.name for p in Path(current_working_directory).iterdir()))
+    return PROMPT_TEMPLATE.format(current_working_directory=current_working_directory, directory_listing=directory_listing)
