@@ -1,28 +1,36 @@
+import asyncio
 import subprocess
-from typing import Annotated, cast
+from typing import Annotated
 
 from duckduckgo_search import DDGS
 from pydantic_ai import RunContext
-from pydantic_ai.common_tools.duckduckgo import DuckDuckGoSearchTool
+from pydantic_ai.common_tools.duckduckgo import DuckDuckGoResult, DuckDuckGoSearchTool
 from pydantic_ai.tools import Tool
 from rich.prompt import Confirm
 
 from dev_ai.deps import AgentDeps
 
-search_tool = Tool(
-    DuckDuckGoSearchTool(client=DDGS(), max_results=10).__call__,
-    name="search_web",
-    description="Searches the web for the given query and returns the results.",
-)
+
+async def search_web(ctx: RunContext[AgentDeps], query: Annotated[str, "The search query"]) -> list[DuckDuckGoResult]:
+    """
+    Searches the web for the given query and returns the results.
+    """
+    ctx.deps.console.print(f"[bold blue]Searching web for: {query}[/bold blue]")
+    ddg_tool = DuckDuckGoSearchTool(client=DDGS(), max_results=10)
+    
+    results = await ddg_tool(query)
+    print(results)
+    return results
 
 
-def run_bash_command(
+async def run_bash_command(
     ctx: RunContext[AgentDeps],
     command: Annotated[str, "The bash command to run"],
     destructive: Annotated[bool, "Whether the command is destructive (modifies the system)"] = False,
 ) -> str:
     """
-    Run a bash command and return the output. Only use this tool if the action cannot be completed by other tools.
+    Run a bash command and return the output (up to 100 lines). The output will also be displayed to the user.
+    Only use this tool if the action cannot be completed by other tools.
     Set destructive to True if it is possible that the command will modify the system.
     """
     if destructive:
@@ -51,14 +59,29 @@ def run_bash_command(
                     line = process.stdout.readline()
                     if line:
                         output.append(line)
-                        ctx.deps.console.print(f"[dim]```\n{line.rstrip()}\n```[/dim]")
-
+                        ctx.deps.console.print(f"[dim]{line.rstrip()}[/dim]")
+                    
+                    # Read any remaining output after process ends
                     if process.poll() is not None:
+                        remaining = process.stdout.read()
+                        if remaining:
+                            for line in remaining.splitlines():
+                                output.append(line + '\n')
+                                ctx.deps.console.print(f"[dim]{line}[/dim]")
                         break
-
-            if process.returncode != 0 and process.stderr:  # Check if stderr is not None
+                # Limit output to 100 lines
+        if len(output) > 100:
+            output = output[:100]
+            output.append("... (output truncated)")
+            
+        if process.returncode != 0:
+            output_str = "\n".join(output)
+            error_msg = f"Command failed with exit code {process.returncode}:\nOutput:\n{output_str}"
+            if process.stderr:  # Check if stderr is not None
                 stderr = process.stderr.read()
-                return f"Command failed with exit code {process.returncode}:\n{stderr}"
+                if stderr:  # Only add error section if there was stderr output
+                    error_msg += f"\nError:\n{stderr}"
+            return error_msg
 
         return "\n".join(output)
     except Exception as e:
@@ -67,7 +90,7 @@ def run_bash_command(
         return error_msg
 
 
-def create_file(
+async def create_file(
     ctx: RunContext[AgentDeps],
     path: Annotated[str, "The path to create the file at"],
     content: Annotated[str, "The content to write to the file"],
@@ -81,7 +104,7 @@ def create_file(
     return f"File created at {path}"
 
 
-def read_file(ctx: RunContext[AgentDeps], path: Annotated[str, "The path to read the file from"]) -> str:
+async def read_file(ctx: RunContext[AgentDeps], path: Annotated[str, "The path to read the file from"]) -> str:
     """
     Read the content of the file at the given path.
     """

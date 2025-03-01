@@ -7,7 +7,7 @@ from pydantic_ai.messages import ModelMessage
 from pydantic_ai.models import Model
 
 from dev_ai.deps import AgentDeps
-from dev_ai.tools import create_file, read_file, run_bash_command, search_tool
+from dev_ai.tools import create_file, read_file, run_bash_command, search_web
 
 
 class LLMResponse(BaseModel):
@@ -65,7 +65,7 @@ def get_agent_runner(model: Model, deps: AgentDeps) -> AgentRunner:
         deps_type=type(deps),
         system_prompt=get_system_prompt(deps.current_working_directory),
         result_type=LLMResponse,
-        tools=[search_tool, run_bash_command, create_file, read_file],
+        tools=[search_web, run_bash_command, create_file, read_file],
     )
     return AgentRunner(agent, deps=deps)
 
@@ -82,9 +82,18 @@ whos purpose is to help the user with their software development or general comp
 * If the user request is unclear, ambigious or invalid, ask clarifying questions.
 * Use the tools provided to obtain any information or perform any actions necessary to complete the user's request.
 * If you have completed the users request and have no further questions to ask, set the `end_conversation` field to `True`.
+* Don't assume what type of project the user is working on if it is not evident from the request. Use the available tools or ask to find out if required.
+* When using the `run_bash_command` tool, you do not need to provide the output back to the user because it will be displayed to them already. 
 
 
 # EXAMPLES
+
+User: "list full paths of all python files"
+Assistant: run_bash_command(command="find . -name '*.py' -type f -print", destructive=False)
+User: <result from run_bash_command>
+
+GOOD RESPONSE: I've run a command to list all python files in the current directory and its subdirectories.
+BAD RESPONSE: <repeats the output back to the user>
 
 
 # CONTEXTUAL INFORMATION
