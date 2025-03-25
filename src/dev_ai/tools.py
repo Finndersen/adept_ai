@@ -1,4 +1,3 @@
-import os
 import subprocess
 from typing import Annotated
 
@@ -7,18 +6,18 @@ from pydantic_ai import RunContext
 from pydantic_ai.common_tools.duckduckgo import DuckDuckGoResult, DuckDuckGoSearchTool
 from rich.prompt import Confirm
 
+from dev_ai.console import console
 from dev_ai.deps import AgentDeps
+from dev_ai.framework.tool import ToolError
 
 
-async def search_web(ctx: RunContext[AgentDeps], query: Annotated[str, "The search query"]) -> list[DuckDuckGoResult]:
+async def search_web(query: Annotated[str, "The search query"]) -> list[DuckDuckGoResult]:
     """
     Searches the web for the given query and returns the results.
     """
-    ctx.deps.console.print(f"[bold blue]Searching web for: {query}[/bold blue]")
     ddg_tool = DuckDuckGoSearchTool(client=DDGS(), max_results=10)
 
     results = await ddg_tool(query)
-    print(results)
     return results
 
 
@@ -38,8 +37,7 @@ async def run_bash_command(
 
     try:
         # Create a panel to display command output
-        ctx.deps.console.print(f"[bold blue]$ {command}[/bold blue]")
-        with ctx.deps.console.status("", spinner="bouncingBall"):
+        with console.status("", spinner="bouncingBall"):
             process = subprocess.Popen(
                 command,
                 shell=True,
@@ -58,15 +56,15 @@ async def run_bash_command(
                     line = process.stdout.readline()
                     if line:
                         output.append(line)
-                        ctx.deps.console.print(f"[dim]{line.rstrip()}[/dim]")
+                        console.print(f"[dim]{line.rstrip()}[/dim]")
 
                     # Read any remaining output after process ends
                     if process.poll() is not None:
                         remaining = process.stdout.read()
                         if remaining:
                             for line in remaining.splitlines():
-                                output.append(line + '\n')
-                                ctx.deps.console.print(f"[dim]{line}[/dim]")
+                                output.append(line + "\n")
+                                console.print(f"[dim]{line}[/dim]")
                         break
                 # Limit output to 100 lines
         if len(output) > 100:
@@ -80,83 +78,8 @@ async def run_bash_command(
                 stderr = process.stderr.read()
                 if stderr:  # Only add error section if there was stderr output
                     error_msg += f"\nError:\n{stderr}"
-            return error_msg
+            raise ToolError(error_msg)
 
         return "\n".join(output)
-    except Exception as e:
-        error_msg = f"Error executing command: {str(e)}"
-        ctx.deps.console.print(f"[red]{error_msg}[/red]")
-        return error_msg
-
-
-async def create_file(
-    ctx: RunContext[AgentDeps],
-    path: Annotated[str, "The path to create the file at"],
-    content: Annotated[str, "The content to write to the file"],
-) -> str:
-    """
-    Create a file at the given path with the given content. DO NOT use this tool to overwrite or edit existing files.
-    """
-    if os.path.exists(path):
-        error_msg = f"File already exists at {path}"
-        ctx.deps.console.print(f"[red]{error_msg}[/red]")
-        return error_msg
-
-    ctx.deps.console.print(f"[bold blue]Creating file: {path}[/bold blue]")
-
-    try:
-        with open(path, "w") as f:
-            f.write(content)
-        return f"File created at {path}"
     except OSError as e:
-        error_msg = f"Error creating file: {repr(e)}"
-        ctx.deps.console.print(f"[red]{error_msg}[/red]")
-        return error_msg
-
-
-async def read_file(ctx: RunContext[AgentDeps], path: Annotated[str, "The path to read the file from"]) -> str:
-    """
-    Read the content of the file at the given path.
-    """
-    ctx.deps.console.print(f"[bold blue]Reading file: {path}[/bold blue]")
-    try:
-        with open(path, "r") as f:
-            content = f.read()
-
-            return content
-    except OSError as e:
-        error_msg = f"Error reading file: {repr(e)}"
-        ctx.deps.console.print(f"[red]{error_msg}[/red]")
-        return error_msg
-
-
-async def edit_file(ctx: RunContext[AgentDeps],
-                    file_path: Annotated[str, "The path of the file to edit"],
-                    instructions: Annotated[str, "The instructions for the changes to make to the file"]) -> str:
-    """
-    Edit the file at the given path by providing instructions for the changes to make.
-    The instructions should be detailed enough for another agent to complete the task.
-    When fixing errors reported in a file, just provide the details of the errors and let the agent work out how to fix them.
-    Summarise or simplify the error details if possible (such as excluding the file path), 
-    but ensure there is enough detail  (such as line numbers and other context) to resolve the errors. 
-    """
-    ctx.deps.console.print(f"[bold blue]Editing file: {file_path}[/bold blue]")
-    ctx.deps.console.print(f"[bold yellow]Instructions:[/bold yellow] {instructions}")
-
-    return f"File edited at {file_path}"
-
-
-async def fix_file_errors(ctx: RunContext[AgentDeps],
-                    file_path: Annotated[str, "The path of the file with errors"],
-                    error_details: Annotated[str, "Details of errors in the file to be resolved"]) -> str:
-    """
-    Report errors or issues in a file to be resolved by another agent. 
-    Should be used instead of edit_file() for linting, typing, exceptions and other types of errors.
-    Summarise or simplify the error details if possible (such as excluding the file path), 
-    but ensure there is enough detail  (such as line numbers and other context) to resolve the errors.
-    """
-    ctx.deps.console.print(f"[bold blue]Reporting errors in file: {file_path}[/bold blue]")
-    ctx.deps.console.print(f"[bold yellow]Error details:[/bold yellow] {error_details}")
-
-    return f"Errors reported in file {file_path}"
-
+        raise ToolError(f"Error executing command: {repr(e)}") from e

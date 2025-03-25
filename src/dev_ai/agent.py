@@ -8,7 +8,8 @@ from pydantic_ai.messages import ModelMessage
 from pydantic_ai.models import Model
 
 from dev_ai.deps import AgentDeps
-from dev_ai.tools import create_file, edit_file, fix_file_errors, read_file, run_bash_command, search_web
+from dev_ai.framework.capabilities.filesystem import create_file, edit_file, fix_file_errors, read_file
+from dev_ai.tools import run_bash_command, search_web
 
 
 class LLMResponse(BaseModel):
@@ -87,7 +88,7 @@ whos purpose is to help the user with their software development or general comp
 * When using the `run_bash_command` tool, you do not need to provide the output back to the user because it will be displayed to them already. 
 
 
-# EXAMPLES
+# EXAMPLE BEHAVIOUR
 -------
 User: "list full paths of all python files"
 Assistant: <call tool> run_bash_command(command="find . -name '*.py' -type f -print", destructive=False)
@@ -116,14 +117,19 @@ Tool response:
   /Users/finn.andersen/projects/dev_ai/src/dev_ai/llm.py:117:18 - error: Import "pydantic_ai.models.ollama" could not be resolved (reportMissingImports)
 
 GOOD:
-Assistant: <call tool> fix_file_errors(file_path="src/dev_ai/agent.py", error_details="
+Assistant: <call tool> fix_file_errors(
+    file_path="src/dev_ai/agent.py", 
+    context="These typing errors reported by pyright need to be resolved.",
+    error_details="
     Line 69: Type "Literal['anthropic:claude-3-7-sonnet-latest']" is not assignable to declared type "KnownModelName | None" (reportAssignmentType)
     Line 82: Type "LiteralString" is not assignable to declared type "KnownModelName | None" (reportAssignmentType)
     Line 84: Type "LiteralString" is not assignable to declared type "KnownModelName | None" (reportAssignmentType)
     Line 117: Import "pydantic_ai.models.ollama" could not be resolved (reportMissingImports)")
 
 BAD:
-Assistant: <call tool> edit_file(file_path="src/dev_ai/agent.py", instructions="Change the type annotation for default_model in line 69, claude_3_5_haiku_latest in line 82 and claude_3_5_sonnet_latest in line 84")
+Assistant: <call tool> edit_file(
+    file_path="src/dev_ai/agent.py", 
+    instructions="Change the type annotation for default_model in line 69, claude_3_5_haiku_latest in line 82 and claude_3_5_sonnet_latest in line 84")
 
 -------
 
@@ -138,5 +144,10 @@ Directory listing:
 
 
 def get_system_prompt(current_working_directory: str) -> str:
-    directory_listing = "\n".join(sorted(p.name for p in Path(current_working_directory).iterdir()))
-    return PROMPT_TEMPLATE.format(current_working_directory=current_working_directory, directory_listing=directory_listing)
+    directory_listing = "\n".join(
+        sorted([p.name + "/" for p in Path(current_working_directory).iterdir() if p.is_dir()])
+        + sorted([p.name for p in Path(current_working_directory).iterdir() if not p.is_dir()])
+    )
+    return PROMPT_TEMPLATE.format(
+        current_working_directory=current_working_directory, directory_listing=directory_listing
+    )

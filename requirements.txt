@@ -2,14 +2,25 @@
 #    uv pip compile pyproject.toml -o requirements.txt
 annotated-types==0.7.0
     # via pydantic
-anthropic==0.48.0
+anthropic==0.49.0
     # via pydantic-ai-slim
-anyio==4.8.0
+anyio==4.9.0
     # via
     #   anthropic
     #   groq
     #   httpx
+    #   mcp
     #   openai
+    #   sse-starlette
+    #   starlette
+argcomplete==3.6.0
+    # via pydantic-ai-slim
+boto3==1.37.17
+    # via pydantic-ai-slim
+botocore==1.37.17
+    # via
+    #   boto3
+    #   s3transfer
 cachetools==5.5.2
     # via google-auth
 certifi==2025.1.31
@@ -17,14 +28,20 @@ certifi==2025.1.31
     #   httpcore
     #   httpx
     #   requests
+cffi==1.17.1
+    # via sounddevice
 charset-normalizer==3.4.1
     # via requests
 click==8.1.8
-    # via duckduckgo-search
-cohere==5.13.12
+    # via
+    #   duckduckgo-search
+    #   uvicorn
+cohere==5.14.0
     # via pydantic-ai-slim
 colorama==0.4.6
     # via griffe
+decorator==5.2.1
+    # via dev-ai (pyproject.toml)
 deprecated==1.2.18
     # via
     #   opentelemetry-api
@@ -35,9 +52,7 @@ distro==1.9.0
     #   anthropic
     #   groq
     #   openai
-dotenv==0.9.9
-    # via dev-ai (pyproject.toml)
-duckduckgo-search==7.5.0
+duckduckgo-search==7.5.2
     # via pydantic-ai-slim
 eval-type-backport==0.2.2
     # via
@@ -47,20 +62,22 @@ executing==2.2.0
     # via logfire
 fastavro==1.10.0
     # via cohere
-filelock==3.17.0
+filelock==3.18.0
     # via huggingface-hub
-fsspec==2025.2.0
+fsspec==2025.3.0
     # via huggingface-hub
 google-auth==2.38.0
     # via pydantic-ai-slim
-googleapis-common-protos==1.68.0
+googleapis-common-protos==1.69.2
     # via opentelemetry-exporter-otlp-proto-http
-griffe==1.5.7
+griffe==1.6.2
     # via pydantic-ai-slim
-groq==0.18.0
+groq==0.20.0
     # via pydantic-ai-slim
 h11==0.14.0
-    # via httpcore
+    # via
+    #   httpcore
+    #   uvicorn
 httpcore==1.0.7
     # via httpx
 httpx==0.28.1
@@ -68,66 +85,80 @@ httpx==0.28.1
     #   anthropic
     #   cohere
     #   groq
+    #   mcp
     #   mistralai
     #   openai
     #   pydantic-ai-slim
     #   pydantic-graph
 httpx-sse==0.4.0
-    # via cohere
-huggingface-hub==0.29.1
+    # via
+    #   cohere
+    #   mcp
+huggingface-hub==0.29.3
     # via tokenizers
 idna==3.10
     # via
     #   anyio
     #   httpx
     #   requests
-importlib-metadata==8.5.0
+importlib-metadata==8.6.1
     # via opentelemetry-api
-jiter==0.8.2
+jinja2==3.1.6
+    # via dev-ai (pyproject.toml)
+jiter==0.9.0
     # via
     #   anthropic
     #   openai
+jmespath==1.0.1
+    # via
+    #   boto3
+    #   botocore
 jsonpath-python==1.0.6
     # via mistralai
-logfire==3.6.4
+logfire==3.9.0
     # via pydantic-ai
-logfire-api==3.6.4
-    # via
-    #   pydantic-ai-slim
-    #   pydantic-graph
+logfire-api==3.9.0
+    # via pydantic-graph
 lxml==5.3.1
     # via duckduckgo-search
 markdown-it-py==3.0.0
     # via rich
+markupsafe==3.0.2
+    # via jinja2
+mcp==1.4.1
+    # via pydantic-ai-slim
 mdurl==0.1.2
     # via markdown-it-py
-mistralai==1.5.0
+mistralai==1.5.2
     # via pydantic-ai-slim
 mypy-extensions==1.0.0
     # via typing-inspect
-openai==1.65.1
+numpy==2.2.4
+    # via openai
+openai==1.68.0
     # via pydantic-ai-slim
-opentelemetry-api==1.30.0
+opentelemetry-api==1.31.1
     # via
     #   opentelemetry-exporter-otlp-proto-http
     #   opentelemetry-instrumentation
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
-opentelemetry-exporter-otlp-proto-common==1.30.0
+    #   pydantic-ai-slim
+opentelemetry-exporter-otlp-proto-common==1.31.1
     # via opentelemetry-exporter-otlp-proto-http
-opentelemetry-exporter-otlp-proto-http==1.30.0
+opentelemetry-exporter-otlp-proto-http==1.31.1
     # via logfire
-opentelemetry-instrumentation==0.51b0
+opentelemetry-instrumentation==0.52b1
     # via logfire
-opentelemetry-proto==1.30.0
+opentelemetry-proto==1.31.1
     # via
     #   opentelemetry-exporter-otlp-proto-common
     #   opentelemetry-exporter-otlp-proto-http
-opentelemetry-sdk==1.30.0
+opentelemetry-sdk==1.31.1
     # via
     #   logfire
     #   opentelemetry-exporter-otlp-proto-http
-opentelemetry-semantic-conventions==0.51b0
+opentelemetry-semantic-conventions==0.52b1
     # via
     #   opentelemetry-instrumentation
     #   opentelemetry-sdk
@@ -137,7 +168,9 @@ packaging==24.2
     #   opentelemetry-instrumentation
 primp==0.14.0
     # via duckduckgo-search
-protobuf==5.29.3
+prompt-toolkit==3.0.50
+    # via pydantic-ai-slim
+protobuf==5.29.4
     # via
     #   googleapis-common-protos
     #   logfire
@@ -148,19 +181,23 @@ pyasn1==0.6.1
     #   rsa
 pyasn1-modules==0.4.1
     # via google-auth
+pycparser==2.22
+    # via cffi
 pydantic==2.10.6
     # via
     #   dev-ai (pyproject.toml)
     #   anthropic
     #   cohere
     #   groq
+    #   mcp
     #   mistralai
     #   openai
     #   pydantic-ai-slim
     #   pydantic-graph
-pydantic-ai==0.0.30
+    #   pydantic-settings
+pydantic-ai==0.0.42
     # via dev-ai (pyproject.toml)
-pydantic-ai-slim==0.0.30
+pydantic-ai-slim==0.0.42
     # via
     #   dev-ai (pyproject.toml)
     #   pydantic-ai
@@ -168,14 +205,20 @@ pydantic-core==2.27.2
     # via
     #   cohere
     #   pydantic
-pydantic-graph==0.0.30
+pydantic-graph==0.0.42
     # via pydantic-ai-slim
+pydantic-settings==2.8.1
+    # via mcp
 pygments==2.19.1
     # via rich
 python-dateutil==2.9.0.post0
-    # via mistralai
+    # via
+    #   botocore
+    #   mistralai
 python-dotenv==1.0.1
-    # via dotenv
+    # via
+    #   dev-ai (pyproject.toml)
+    #   pydantic-settings
 pyyaml==6.0.2
     # via huggingface-hub
 requests==2.32.3
@@ -188,8 +231,11 @@ rich==13.9.4
     # via
     #   dev-ai (pyproject.toml)
     #   logfire
+    #   pydantic-ai-slim
 rsa==4.9
     # via google-auth
+s3transfer==0.11.4
+    # via boto3
 six==1.17.0
     # via python-dateutil
 sniffio==1.3.1
@@ -198,13 +244,21 @@ sniffio==1.3.1
     #   anyio
     #   groq
     #   openai
-tokenizers==0.21.0
+sounddevice==0.5.1
+    # via openai
+sse-starlette==2.2.1
+    # via mcp
+starlette==0.46.1
+    # via
+    #   mcp
+    #   sse-starlette
+tokenizers==0.21.1
     # via cohere
 tqdm==4.67.1
     # via
     #   huggingface-hub
     #   openai
-types-requests==2.32.0.20241016
+types-requests==2.32.0.20250306
     # via cohere
 typing-extensions==4.12.2
     # via
@@ -219,12 +273,22 @@ typing-extensions==4.12.2
     #   pydantic
     #   pydantic-core
     #   typing-inspect
+    #   typing-inspection
 typing-inspect==0.9.0
     # via mistralai
+typing-inspection==0.4.0
+    # via
+    #   pydantic-ai-slim
+    #   pydantic-graph
 urllib3==2.3.0
     # via
+    #   botocore
     #   requests
     #   types-requests
+uvicorn==0.34.0
+    # via mcp
+wcwidth==0.2.13
+    # via prompt-toolkit
 wrapt==1.17.2
     # via
     #   deprecated

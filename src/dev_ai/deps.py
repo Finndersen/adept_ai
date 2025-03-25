@@ -1,9 +1,7 @@
 from dataclasses import dataclass
-
-from rich.console import Console
+from pathlib import Path
 
 
 @dataclass
 class AgentDeps:
-    current_working_directory: str
-    console: Console
+    current_working_directory: Path

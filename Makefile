@@ -2,14 +2,12 @@
 
 # Compile dependency lock files
 compile:
-	uv pip compile pyproject.toml -o requirements.txt
-	uv pip compile pyproject.toml --extra dev -o requirements-dev.txt
+	uv pip compile pyproject.toml --upgrade -o requirements.txt
+	uv pip compile pyproject.toml --upgrade --extra dev -o requirements-dev.txt
 
 # Install development dependencies from lockfile
 install:
 	uv pip install -r requirements-dev.txt
-	uv pip install -e .
-	@echo "Installation complete. You can now run 'dev' command."
 
 # Run linting checks
 lint:
