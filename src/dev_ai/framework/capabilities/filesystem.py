@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated, List
+from typing import Annotated, Iterable, List
 
 from git import InvalidGitRepositoryError, NoSuchPathError, Repo
 from pydantic_ai import RunContext
@@ -62,7 +62,7 @@ class FileSystemCapability(Capability):
         content: Annotated[str, "The content to write to the file"],
     ) -> str:
         """
-        Create a file at the given path with the given content. DO NOT use this tool to overwrite or edit existing files.
+        Create a file at the given path with the given content. DO NOT use to overwrite or edit existing files.
         """
         abs_path = self._get_abs_path(path)
         if abs_path.exists():
@@ -127,7 +127,7 @@ async def edit_file(
     """
     Edit the file at the given path by providing instructions for the changes to make.
     The instructions should be detailed enough for another agent to complete the task.
-    When fixing errors reported in a file, just provide the details of the errors and let the agent work out how to fix them.
+    When resolving errors in a file, just provide the details of the errors and let the agent decide how to fix them.
     Summarise or simplify the error details if possible (such as excluding the file path),
     but ensure there is enough detail  (such as line numbers and other context) to resolve the errors.
     """
@@ -141,6 +141,7 @@ class DirectoryTree:
     """
     Class that holds a directory tree and provides methods for formatting it as a tree or list of paths.
     """
+
     root_directory: Path
     initial_directory_depth: int
     root_item: FileSystemItem
@@ -200,16 +201,16 @@ class DirectoryTree:
         return result
 
     def _build_directory_tree(self, dir_path: Path, depth: int = 0) -> FileSystemItem:
-        dir_entires = dir_path.iterdir()
-        if self.git_repo:
-            # Get all entries relative to the root directory for gitignore checking
-            rel_entries = [(entry, str(entry.relative_to(self.git_repo.working_dir))) for entry in dir_entires]
-            ignored_entries = set(self.git_repo.ignored(*[entry[1] for entry in rel_entries]))
-            dir_entires = [entry[0] for entry in rel_entries if entry[1] not in ignored_entries]
+        """Build a directory tree from the given path."""
+        dir_entires = self._get_filtered_dir_entries(dir_path)
 
         # Sort items by directories first, then files, then alphabetically
         children = []
         for entry_path in sorted(dir_entires, key=lambda x: (not x.is_dir(), x.name.lower())):
+            # Skip .gitignored or other other files
+            if entry_path.name == ".git":
+                continue
+
             if entry_path.is_dir():
                 if depth < self.initial_directory_depth:
                     children.append(self._build_directory_tree(entry_path, depth + 1))
@@ -219,6 +220,17 @@ class DirectoryTree:
                 children.append(FileSystemItem(path=entry_path, children=None, is_directory=False))
 
         return FileSystemItem(path=dir_path, children=children, expanded=True, is_directory=True)
+
+    def _get_filtered_dir_entries(self, dir_path: Path) -> Iterable[Path]:
+        """Get the entries of a directory, filtered by gitignore rules."""
+        dir_entires = dir_path.iterdir()
+
+        if not self.git_repo:
+            return dir_entires
+
+        rel_entries = [(entry, str(entry.relative_to(self.git_repo.working_dir))) for entry in dir_entires]
+        ignored_entries = set(self.git_repo.ignored(*[entry[1] for entry in rel_entries]))
+        return [entry[0] for entry in rel_entries if entry[1] not in ignored_entries]
 
     def format_as_tree(self) -> str:
         if not self._tree_cache:
