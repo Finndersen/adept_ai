@@ -11,14 +11,15 @@ install:
 
 # Run linting checks
 lint:
-	ruff check .
 	ruff format . --check
+	ruff check .
 	python -m pyright
 
 # Format code
 format:
-	ruff check . --fix
 	ruff format .
+	ruff check . --fix
+
 
 # Run tests with coverage
 test:

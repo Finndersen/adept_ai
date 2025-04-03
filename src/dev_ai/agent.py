@@ -128,7 +128,7 @@ Assistant: <call tool> fix_file_errors(
 
 BAD:
 Assistant: <call tool> edit_file(
-    file_path="src/dev_ai/agent.py", 
+    file_path="src/dev_ai/agent.py",
     instructions="Change the type annotation for default_model in line 69, claude_3_5_haiku_latest in line 82 and claude_3_5_sonnet_latest in line 84")
 
 -------

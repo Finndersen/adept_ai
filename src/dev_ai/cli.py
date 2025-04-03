@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import asyncio
 
 import logfire
 from rich.console import Console
@@ -48,7 +49,7 @@ def main():
         return 1
 
     # Run the assistant
-    run(model=model, prompt=args.prompt)
+    asyncio.run(run(model=model, prompt=args.prompt))
 
     return 0
 
