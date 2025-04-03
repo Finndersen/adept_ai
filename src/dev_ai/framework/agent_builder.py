@@ -11,10 +11,12 @@ class AgentBuilder:
     Class which uses an agent's identity and capabilities to build a dynamic system prompt and list of tools
     """
 
+    _role: str
     _capabilities: list[Capability]
     _system_prompt_template: Path
 
-    def __init__(self, capabilities: list[Capability], system_prompt_template: Path | None = None) -> None:
+    def __init__(self, role: str, capabilities: list[Capability], system_prompt_template: Path | None = None) -> None:
+        self._role = role
         self._system_prompt_template = system_prompt_template or Path(__file__).resolve().parent / "prompt_template.md"
         self._capabilities = capabilities
 
@@ -31,30 +33,34 @@ class AgentBuilder:
             function=self.enable_capability,
         )
 
-    def enable_capability(self, name: str) -> None:
+    def enable_capability(self, name: str) -> str:
         """
         Enables a capability by name
         """
         for capability in self._capabilities:
             if capability.name.lower() == name.lower():
                 capability.enabled = True
-                return
+                return f"Capability {name} enabled"
 
         raise ValueError(f"Capability {name} not found")
 
-    def get_system_prompt(self) -> str:
+    async def get_system_prompt(self) -> str:
         """
         Returns the system prompt for the agent, generated from the capabilities
         """
         with self._system_prompt_template.open("r") as f:
             template = f.read()
 
-        jinja_template = Template(template)
+        jinja_template = Template(template, enable_async=True)
 
         # Render the template with the context
-        return jinja_template.render(
-            enabled_capabilities=self.enabled_capabilities, disabled_capabilities=self.disabled_capabilities
+        prompt = await jinja_template.render_async(
+            role=self._role,
+            enabled_capabilities=self.enabled_capabilities,
+            disabled_capabilities=self.disabled_capabilities,
         )
+
+        return prompt
 
     def get_tools(self) -> list[Tool]:
         """
