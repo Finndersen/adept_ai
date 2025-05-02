@@ -1,13 +1,10 @@
-from functools import partial
 from pathlib import Path
 
 from jinja2 import Template
-from pydantic_ai import RunContext
 from pydantic_ai.tools import Tool as PydanticTool
-from pydantic_ai.tools import ToolDefinition
 
 from dev_ai.framework.capabilities import Capability
-from dev_ai.framework.tool import ParameterSpec, Tool, wrap_tool_for_pydantic
+from dev_ai.framework.tool import ParameterSpec, Tool, to_pydanticai_tool
 
 
 class AgentBuilder:
@@ -35,6 +32,7 @@ class AgentBuilder:
                 "name": ParameterSpec(type="string", description="The name of the capability to enable"),
             },
             function=self.enable_capability,
+            updates_system_prompt=True,
         )
 
     def enable_capability(self, name: str) -> str:
@@ -100,29 +98,16 @@ class AgentBuilder:
         Returns tools for all capabilities, but only enables the tool if the capability is enabled
         """
 
-        async def enable_tool(
-            ctx: RunContext, tool_def: ToolDefinition, capability: Capability
-        ) -> ToolDefinition | None:
-            # Disable the tool if the capability is disabled
-            if capability.enabled:
-                return tool_def
-            else:
-                return None
-
-        tools = []
+        tools = [
+            to_pydanticai_tool(
+                tool=self._get_enable_capabilities_tool(), system_prompt_builder=self.get_system_prompt, enabled=True
+            )
+        ]
         for capability in self._capabilities:
-            enable_capability_tool = partial(enable_tool, capability=capability)
-
             for tool in capability.get_tools():
                 tools.append(
-                    PydanticTool(
-                        function=wrap_tool_for_pydantic(
-                            tool.function, self.get_system_prompt, refresh_system_prompt=tool.updates_system_prompt
-                        ),
-                        name=tool.name,
-                        description=tool.description,
-                        takes_ctx=True,
-                        prepare=enable_capability_tool,
+                    to_pydanticai_tool(
+                        tool=tool, system_prompt_builder=self.get_system_prompt, enabled=lambda: capability.enabled
                     )
                 )
 

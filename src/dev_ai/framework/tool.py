@@ -76,10 +76,15 @@ class ToolError(Exception):
     pass
 
 
-def wrap_tool_for_pydantic(
+def wrap_tool_func_for_pydantic(
     tool_func: ToolFunction, system_prompt_builder: Callable[[], Awaitable[str]], refresh_system_prompt: bool = False
 ) -> Callable[..., Awaitable[str]]:
-    """Decorate the tool function with a wrapper that will have the same signature as the tool function."""
+    """
+    Decorate the tool function with a wrapper that will have the same signature as the tool function. The wrapper\:
+    - is asynchronous regardless of original function
+    - Forces a rebuild of the system prompt if refresh_system_prompt is True
+    - catches any ToolError raised by the function and returns as error message
+    """
 
     async def _wrapper(ctx: RunContext, *args, **kwargs) -> str:
         """Wrap a tool function to handle errors and log to the console."""
@@ -95,8 +100,9 @@ def wrap_tool_for_pydantic(
             if refresh_system_prompt:
                 system_prompt_part = ctx.messages[0].parts[0]
                 assert isinstance(system_prompt_part, SystemPromptPart)
-                print("UPDATING SYSTEM PROMPT")
                 system_prompt_part.content = await system_prompt_builder()
+                # print("UPDATING SYSTEM PROMPT")
+                # print(system_prompt_part.content)
 
             return result
         except ToolError as e:
@@ -124,3 +130,29 @@ def wrap_tool_for_pydantic(
     _wrapper.__qualname__ = tool_func.__qualname__
 
     return _wrapper
+
+
+def to_pydanticai_tool(
+    tool: Tool, system_prompt_builder: Callable[[], Awaitable[str]], enabled: bool | Callable[[], bool] = True
+) -> PydanticTool:
+    async def enable_tool(ctx: RunContext, tool_def: ToolDefinition) -> ToolDefinition | None:
+        # Need to dynamically evaluate the enabler function each time
+        if callable(enabled):
+            _enabled = enabled()
+        else:
+            _enabled = enabled
+
+        if _enabled:
+            return tool_def
+        else:
+            return None
+
+    return PydanticTool(
+        function=wrap_tool_func_for_pydantic(
+            tool.function, system_prompt_builder, refresh_system_prompt=tool.updates_system_prompt
+        ),
+        name=tool.name,
+        description=tool.description,
+        takes_ctx=True,
+        prepare=enable_tool,
+    )

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Iterable, List
 
+import aiofiles
 from git import InvalidGitRepositoryError, NoSuchPathError, Repo
 from pydantic_ai import RunContext
 
@@ -32,7 +33,7 @@ class FileSystemCapability(Capability):
     """
 
     name = "file_system"
-    description = "View the directory structure and read & write content of files from the file system. Does not support editing existing files."
+    description = "View the local working directory structure and read & write content of files from the file system. Does not support editing existing files."
 
     def __init__(
         self,
@@ -52,8 +53,8 @@ class FileSystemCapability(Capability):
     def get_tools(self) -> list[Tool]:
         return [
             Tool.from_function(self.create_file),
-            Tool.from_function(self.read_file),
-            Tool.from_function(self.expand_directory),
+            Tool.from_function(self.read_file, updates_system_prompt=True),
+            Tool.from_function(self.expand_directory, updates_system_prompt=True),
         ]
 
     async def create_file(
@@ -71,46 +72,46 @@ class FileSystemCapability(Capability):
         console.print(f"[bold blue]Creating file: {abs_path}[/bold blue]")
 
         try:
-            with open(abs_path, "w") as f:
-                f.write(content)
+            async with aiofiles.open(abs_path, "w") as f:
+                await f.write(content)
             return f"File created at {path}"
         except OSError as e:
             raise ToolError(f"Error creating file: {repr(e)}") from e
 
     async def read_file(
-        self, path: Annotated[str, "The path to read the file from (relative to the working directory)"]
+        self, rel_path: Annotated[str, "The path to read the file from (relative to the working directory)"]
     ) -> str:
         """
         Read the content of the file at the given path.
         """
-        abs_path = self._get_abs_path(path)
+        abs_path = self._get_abs_path(rel_path)
         try:
-            with open(abs_path, "r") as f:
-                content = f.read()
-                return content
+            async with aiofiles.open(abs_path, "r") as f:
+                return await f.read()
         except OSError as e:
             raise ToolError(f"Error reading file: {repr(e)}") from e
 
     async def expand_directory(
         self,
-        path: Annotated[str, "The directory path to expand (relative to the working directory)"],
+        rel_path: Annotated[str, "The directory path to expand (relative to the working directory)"],
     ) -> str:
         """
-        Expand the directory tree to show the requested path.
+        Expand the directory tree to view the requested path that is not currently expanded (marked with [not expanded]).
+        Updates the existing directory structure in-place. This is not visible to the user, only you.
         """
-        abs_path = self._get_abs_path(path)
+        abs_path = self._get_abs_path(rel_path)
         if not abs_path.exists():
-            raise ToolError(f"Directory does not exist: {path}")
+            raise ToolError(f"Directory does not exist: {rel_path}")
         if not abs_path.is_dir():
-            raise ToolError(f"Path is not a directory: {path}")
+            raise ToolError(f"Path is not a directory: {rel_path}")
 
         console.print(f"[bold blue]Expanding directory: {abs_path}[/bold blue]")
 
         # Update the directory tree to show the requested path
         if self.directory_tree.expand_directory(abs_path):
-            return f"Expanded directory: {path}"
+            return f"Expanded directory: {rel_path}"
         else:
-            return f"Directory not found or could not be expanded: {path}"
+            return f"Directory not found or could not be expanded: {rel_path}"
 
     def _get_abs_path(self, path: str) -> Path:
         # Verify that the path is relative and not absolute
