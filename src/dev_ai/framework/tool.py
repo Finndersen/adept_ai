@@ -6,6 +6,8 @@ from pydantic_ai import RunContext
 from pydantic_ai._pydantic import function_schema
 from pydantic_ai._utils import run_in_executor
 from pydantic_ai.messages import SystemPromptPart
+from pydantic_ai.tools import GenerateToolJsonSchema, ToolDefinition
+from pydantic_ai.tools import Tool as PydanticTool
 
 from dev_ai.console import console
 
@@ -49,7 +51,11 @@ class Tool(BaseModel):
         """
 
         schema = function_schema(
-            function=function, takes_ctx=False, docstring_format="auto", require_parameter_descriptions=False
+            function=function,
+            takes_ctx=False,
+            docstring_format="auto",
+            require_parameter_descriptions=False,
+            schema_generator=GenerateToolJsonSchema,
         )
 
         description = description or schema["description"]

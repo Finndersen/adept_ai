@@ -11,12 +11,12 @@ authors = [{ name = "Your Name", email = "your.email@example.com" }]
 dependencies = [
     "pydantic",
     "pydantic-ai[logfire]",
-    "pydantic-ai-slim[duckduckgo]",
     "rich",
     "python-dotenv",
+    "aiofiles",
     "jinja2>=3.1.6",
     "decorator>=5.2.1",
-    "aider-chat>=0.77.1",
+#    "aider-chat>=0.77.1",
 ]
 
 [project.scripts]

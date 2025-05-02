@@ -92,34 +92,31 @@ def build_model_from_name_and_api_key(model_name: KnownModelName | None, api_key
 
     if isinstance(model_name, str) and model_name.startswith("openai:"):
         from pydantic_ai.models.openai import OpenAIModel
+        from pydantic_ai.providers.openai import OpenAIProvider
 
-        return OpenAIModel(model_name[7:], api_key=api_key)
+        return OpenAIModel(model_name[7:], provider=OpenAIProvider(api_key=api_key))
 
     elif isinstance(model_name, str) and model_name.startswith("anthropic:"):
         from pydantic_ai.models.anthropic import AnthropicModel
+        from pydantic_ai.providers.anthropic import AnthropicProvider
 
-        return AnthropicModel(model_name[10:], api_key=api_key)
+        return AnthropicModel(model_name[10:], provider=AnthropicProvider(api_key=api_key))
 
     elif isinstance(model_name, str) and model_name.startswith("google-gla:"):
-        return GeminiModelWithRetry(cast(GeminiModelName, model_name[11:]), api_key=api_key)
+        from pydantic_ai.providers.google_gla import GoogleGLAProvider
+
+        return GeminiModelWithRetry(cast(GeminiModelName, model_name[11:]), provider=GoogleGLAProvider(api_key=api_key))
 
     elif isinstance(model_name, str) and model_name.startswith("groq:"):
         from pydantic_ai.models.groq import GroqModel, GroqModelName
+        from pydantic_ai.providers.groq import GroqProvider
 
-        return GroqModel(cast(GroqModelName, model_name[5:]), api_key=api_key)
+        return GroqModel(cast(GroqModelName, model_name[5:]), provider=GroqProvider(api_key=api_key))
 
     elif isinstance(model_name, str) and model_name.startswith("mistral:"):
         from pydantic_ai.models.mistral import MistralModel
+        from pydantic_ai.providers.mistral import MistralProvider
 
-        return MistralModel(model_name[8:], api_key=api_key)
-
-    elif isinstance(model_name, str) and model_name.startswith("ollama:"):
-        try:
-            from pydantic_ai.models.ollama import OllamaModel
-
-            return OllamaModel(model_name[7:], api_key=api_key or "ollama")
-        except ImportError as e:
-            raise ImportError("OllamaModel could not be imported. Ensure pydantic-ai[ollama] is installed.") from e
-
+        return MistralModel(model_name[8:], provider=MistralProvider(api_key=api_key))
     else:
         raise ValueError(f"Unsupported model name: {model_name}")
