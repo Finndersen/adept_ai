@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Self
 
 from jinja2 import Template
 from pydantic_ai.tools import Tool as PydanticTool
@@ -112,3 +113,12 @@ class AgentBuilder:
                 )
 
         return tools
+
+    async def __aenter__(self) -> Self:
+        # Init all capabilities in parallel
+        await asyncio.gather(*(c.setup for c in self._capabilities))
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await asyncio.gather(*(c.teardown for c in self._capabilities))
+        return self
