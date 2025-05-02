@@ -80,7 +80,7 @@ def wrap_tool_func_for_pydantic(
     tool_func: ToolFunction, system_prompt_builder: Callable[[], Awaitable[str]], refresh_system_prompt: bool = False
 ) -> Callable[..., Awaitable[str]]:
     """
-    Decorate the tool function with a wrapper that will have the same signature as the tool function. The wrapper\:
+    Decorate the tool function with a wrapper that will have the same signature as the tool function. The wrapper:
     - is asynchronous regardless of original function
     - Forces a rebuild of the system prompt if refresh_system_prompt is True
     - catches any ToolError raised by the function and returns as error message

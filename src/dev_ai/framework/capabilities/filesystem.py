@@ -12,24 +12,10 @@ from dev_ai.framework.capabilities.base import Capability
 from dev_ai.framework.tool import Tool, ToolError
 
 
-@dataclass
-class FileSystemItem:
-    path: Path
-    is_directory: bool
-    # None if it is a file or unexpanded directory
-    children: list["FileSystemItem"] | None
-    # Whether the children of the directory are displayed in directory tree
-    expanded: bool = False
-
-    @property
-    def name(self) -> str:
-        """Get the name of the file or directory."""
-        return self.path.name
-
-
 class FileSystemCapability(Capability):
     """
     A capability for viewing directory structures and reading & writing files from the file system.
+    Root directory defaults to the current working directory.
     """
 
     name = "file_system"
@@ -50,7 +36,7 @@ class FileSystemCapability(Capability):
     def prompt_context_data(self) -> str:
         return f"Current working directory: {self.root_directory}\nDirectory structure:\n{self.directory_tree.format_as_paths()}"
 
-    def get_tools(self) -> list[Tool]:
+    async def get_tools(self) -> list[Tool]:
         return [
             Tool.from_function(self.create_file),
             Tool.from_function(self.read_file, updates_system_prompt=True),
@@ -136,6 +122,21 @@ async def edit_file(
     console.print(f"[bold yellow]Instructions:[/bold yellow] {instructions}")
 
     return f"File edited at {file_path}"
+
+
+@dataclass
+class FileSystemItem:
+    path: Path
+    is_directory: bool
+    # None if it is a file or unexpanded directory
+    children: list["FileSystemItem"] | None
+    # Whether the children of the directory are displayed in directory tree
+    expanded: bool = False
+
+    @property
+    def name(self) -> str:
+        """Get the name of the file or directory."""
+        return self.path.name
 
 
 class DirectoryTree:

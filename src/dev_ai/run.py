@@ -25,7 +25,7 @@ async def run(model: Model, prompt: str):
 
     agent = Agent(
         model=model,
-        tools=builder.get_pydantic_ai_tools(),
+        tools=await builder.get_pydantic_ai_tools(),
     )
 
     @agent.system_prompt(dynamic=True)

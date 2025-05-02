@@ -13,10 +13,10 @@ class Capability(ABC):
     description: str
     enabled: bool
 
-    def __init__(self, enabled=False):
+    def __init__(self, enabled: bool = False):
         self.enabled = enabled
 
-    def get_tools(self) -> list[Tool]:
+    async def get_tools(self) -> list[Tool]:
         """
         Returns a list of tools that the capability provides.
         """

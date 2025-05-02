@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from typing import Self
 
@@ -65,7 +66,7 @@ class AgentBuilder:
 
         return prompt
 
-    def get_tools(self) -> list[Tool]:
+    async def get_tools(self) -> list[Tool]:
         """
         Returns the tools from the enabled capabilities
         """
@@ -74,8 +75,10 @@ class AgentBuilder:
         else:
             tools = []
 
-        for capability in self.enabled_capabilities:
-            tools.extend(capability.get_tools())
+        for capability_tools in await asyncio.gather(
+            *(capability.get_tools for capability in self.enabled_capabilities)
+        ):
+            tools.extend(capability_tools)
 
         return tools
 
@@ -93,7 +96,7 @@ class AgentBuilder:
         """
         return [c for c in self._capabilities if not c.enabled]
 
-    def get_pydantic_ai_tools(self) -> list[PydanticTool]:
+    async def get_pydantic_ai_tools(self) -> list[PydanticTool]:
         """
         Get the tools which can be used by a PydanticAI agent
         Returns tools for all capabilities, but only enables the tool if the capability is enabled
@@ -105,7 +108,7 @@ class AgentBuilder:
             )
         ]
         for capability in self._capabilities:
-            for tool in capability.get_tools():
+            for tool in await capability.get_tools():
                 tools.append(
                     to_pydanticai_tool(
                         tool=tool, system_prompt_builder=self.get_system_prompt, enabled=lambda: capability.enabled
