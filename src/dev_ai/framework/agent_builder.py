@@ -6,7 +6,8 @@ from jinja2 import Template
 from pydantic_ai.tools import Tool as PydanticTool
 
 from dev_ai.framework.capabilities import Capability
-from dev_ai.framework.tool import ParameterSpec, Tool, to_pydanticai_tool
+from dev_ai.framework.tool import ParameterSpec, Tool, ToolError
+from dev_ai.framework.pydantic_ai import to_pydanticai_tool
 
 
 class AgentBuilder:
@@ -46,7 +47,7 @@ class AgentBuilder:
                 capability.enabled = True
                 return f"Capability {name} enabled"
 
-        raise ValueError(f"Capability {name} not found")
+        raise ToolError(f"Capability {name} not found")
 
     async def get_system_prompt(self) -> str:
         """

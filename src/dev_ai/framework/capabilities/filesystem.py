@@ -4,10 +4,8 @@ from typing import Annotated, Iterable, List
 
 import aiofiles
 from git import InvalidGitRepositoryError, NoSuchPathError, Repo
-from pydantic_ai import RunContext
 
 from dev_ai.console import console
-from dev_ai.deps import AgentDeps
 from dev_ai.framework.capabilities.base import Capability
 from dev_ai.framework.tool import Tool, ToolError
 
@@ -107,7 +105,6 @@ class FileSystemCapability(Capability):
 
 
 async def edit_file(
-    ctx: RunContext[AgentDeps],
     file_path: Annotated[str, "The path of the file to edit"],
     instructions: Annotated[str, "The instructions for the changes to make to the file"],
 ) -> str:
