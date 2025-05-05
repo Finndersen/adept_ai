@@ -36,8 +36,7 @@ class Capability(ABC):
         """
         return []
 
-    @property
-    def prompt_context_data(self) -> str:
+    async def get_context_data(self) -> str:
         """
         Returns any relevant contextual data for the capability, to be added to the system prompt
         """

@@ -30,8 +30,7 @@ class FileSystemCapability(Capability):
         self.directory_tree = DirectoryTree(self.root_directory, initial_directory_depth, respect_gitignore)
         super().__init__(enabled)
 
-    @property
-    def prompt_context_data(self) -> str:
+    def get_context_data(self) -> str:
         return f"Current working directory: {self.root_directory}\nDirectory structure:\n{self.directory_tree.format_as_paths()}"
 
     async def get_tools(self) -> list[Tool]:
