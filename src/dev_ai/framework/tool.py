@@ -1,5 +1,8 @@
+import inspect
+from functools import partial
 from typing import Awaitable, Callable, Literal, TypedDict, cast
 
+from anyio.to_thread import run_sync
 from pydantic import BaseModel
 from pydantic_ai._pydantic import function_schema
 from pydantic_ai.tools import GenerateToolJsonSchema
@@ -55,7 +58,7 @@ class Tool(BaseModel):
         updates_system_prompt: bool = False,
     ) -> "Tool":
         """
-        Creates a Tool instance from a function.
+        Creates a Tool instance from a function, automatically constructing the input schema
         """
         schema = function_schema(
             function=function,
@@ -75,6 +78,28 @@ class Tool(BaseModel):
             function=function,
             updates_system_prompt=updates_system_prompt,
         )
+
+    async def call(self, *args, **kwargs) -> str:
+        """
+        Call the tool function, with logging and error handling.
+        Calls function asynchronously regardless of whether it originally was or not.
+        This method could be overridden for custom tool call behaviour.
+        :param kwargs:
+        :return:
+        """
+        print(f"[bold blue]Running tool: {self.name} with args: {args} and kwargs: {kwargs}[/bold blue]")
+        try:
+            if inspect.iscoroutinefunction(self.function):
+                result = await self.function(*args, **kwargs)
+            else:
+                wrapped_func = partial(cast(Callable[..., str], self.function), *args, **kwargs)
+                return await run_sync(wrapped_func)
+
+            return result
+        except ToolError as e:
+            error_msg = f"Error: {str(e)}"
+            print(f"[red]{error_msg}[/red]")
+            return error_msg
 
 
 class ToolError(Exception):
