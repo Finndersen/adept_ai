@@ -35,11 +35,10 @@ async def run(model: Model, prompt: str):
     ) as builder:
         agent = Agent(model=model, tools=await builder.get_pydantic_ai_tools(), instrument=True)
 
+        # Configure dynamic system prompt
         @agent.system_prompt(dynamic=True)
         async def system_prompt() -> str:
-            sys_prompt = await builder.get_system_prompt()
-            print(sys_prompt)
-            return sys_prompt
+            return await builder.get_system_prompt()
 
         message_history: list[ModelMessage] = []
 
