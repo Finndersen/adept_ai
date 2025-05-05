@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from pydantic_ai import Agent
@@ -8,10 +9,10 @@ from rich.prompt import Prompt
 from dev_ai.console import console
 from dev_ai.framework.agent_builder import AgentBuilder
 from dev_ai.framework.capabilities.filesystem import FileSystemCapability
+from dev_ai.framework.capabilities.mcp import StdioMCPCapability
 
 EXIT_COMMANDS = ["/quit", "/exit", "/q"]
-ROLE = """
-You are a helpful assistant with strong software development and engineering skills,
+ROLE = """You are a helpful assistant with strong software development and engineering skills,
 whose purpose is to help the user with their software development or general computer use needs."""
 
 
@@ -19,38 +20,41 @@ async def run(model: Model, prompt: str):
     """Initialise services and run agent conversation loop."""
     current_working_directory = Path.cwd()
 
-    builder = AgentBuilder(
-        role=ROLE, capabilities=[FileSystemCapability(root_directory=current_working_directory, enabled=False)]
-    )
+    async with AgentBuilder(
+        role=ROLE,
+        capabilities=[
+            FileSystemCapability(root_directory=current_working_directory),
+            StdioMCPCapability(
+                "github_integration",
+                "Manage GitHub repositories, enabling file operations, search functionality, and integration with the GitHub API for seamless collaborative software development.",
+                command="npx",
+                args=["-y", "@modelcontextprotocol/server-github"],
+                env={"GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv("GITHUB_ACCESS_TOKEN", "")},
+            ),
+        ],
+    ) as builder:
+        agent = Agent(model=model, tools=await builder.get_pydantic_ai_tools(), instrument=True)
 
-    agent = Agent(
-        model=model,
-        tools=await builder.get_pydantic_ai_tools(),
-    )
+        @agent.system_prompt(dynamic=True)
+        async def system_prompt() -> str:
+            sys_prompt = await builder.get_system_prompt()
+            print(sys_prompt)
+            return sys_prompt
 
-    @agent.system_prompt(dynamic=True)
-    async def system_prompt() -> str:
-        sys_prompt = await builder.get_system_prompt()
-        return sys_prompt
+        message_history: list[ModelMessage] = []
 
-    message_history: list[ModelMessage] = []
+        while True:
+            if prompt.startswith("/"):
+                if prompt.lower() in EXIT_COMMANDS:
+                    break
+                console.print(f"Unknown command: {prompt}")
+                continue
 
-    while True:
-        # Need to dynamically re-build the agent for each run because the capabilities can change
+            response = await agent.run(prompt, message_history=message_history)
 
-        if not prompt:
-            continue
-
-        if prompt.startswith("/"):
-            if prompt.lower() in EXIT_COMMANDS:
-                break
-            console.print(f"Unknown command: {prompt}")
-            continue
-
-        response = await agent.run(prompt, message_history=message_history)
-
-        assert response is not None
-        console.print(f"Dev AI: {response.data}")
-        message_history = response.all_messages()
-
-        prompt = Prompt.ask("You").strip()
+            assert response is not None
+            console.print(f"Dev AI: {response.data}")
+            message_history = response.all_messages()
+            prompt = None
+            while not prompt:
+                prompt = Prompt.ask("You").strip()
