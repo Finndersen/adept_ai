@@ -81,7 +81,7 @@ class AgentBuilder:
             tools = []
 
         for capability_tools in await asyncio.gather(
-            *(capability.get_tools for capability in self.enabled_capabilities)
+            *(capability.get_tools() for capability in self.enabled_capabilities)
         ):
             tools.extend(capability_tools)
 
@@ -103,8 +103,9 @@ class AgentBuilder:
 
     async def get_pydantic_ai_tools(self) -> list[PydanticTool]:
         """
-        Get the tools which can be used by a PydanticAI agent
-        Returns tools for all capabilities, but only enables the tool if the capability is enabled
+        Get the tools which can be used by a PydanticAI agent.
+        Returns tools for all capabilities, but only enables the tool if the capability is enabled.
+        This is an unfortunate limitation that means that tools must be processed for all MCP capabilities even if they are not enabled.
         """
 
         tools = [
@@ -124,9 +125,9 @@ class AgentBuilder:
 
     async def __aenter__(self) -> Self:
         # Init all capabilities in parallel
-        await asyncio.gather(*(c.setup for c in self._capabilities))
+        await asyncio.gather(*(c.setup() for c in self._capabilities))
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await asyncio.gather(*(c.teardown for c in self._capabilities))
+        await asyncio.gather(*(c.teardown() for c in self._capabilities))
         return self
