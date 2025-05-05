@@ -9,6 +9,8 @@ from dev_ai.framework.capabilities import Capability
 from dev_ai.framework.pydantic_ai import to_pydanticai_tool
 from dev_ai.framework.tool import ParameterSpec, Tool, ToolError
 
+DEFAULT_PROMPT_TEMPLATE = Path(__file__).resolve().parent / "prompt_template.md"
+
 
 class AgentBuilder:
     """
@@ -21,7 +23,7 @@ class AgentBuilder:
 
     def __init__(self, role: str, capabilities: list[Capability], system_prompt_template: Path | None = None) -> None:
         self._role = role
-        self._system_prompt_template = system_prompt_template or Path(__file__).resolve().parent / "prompt_template.md"
+        self._system_prompt_template = system_prompt_template or DEFAULT_PROMPT_TEMPLATE
         self._capabilities = capabilities
 
     def _get_enable_capabilities_tool(self) -> Tool:
@@ -55,7 +57,7 @@ class AgentBuilder:
 
     async def get_system_prompt(self) -> str:
         """
-        Returns the system prompt for the agent, generated from the capabilities
+        Returns the system prompt for the agent, generated based on role and capabilities
         """
         with self._system_prompt_template.open("r") as f:
             template = f.read()
@@ -117,17 +119,23 @@ class AgentBuilder:
             for tool in await capability.get_tools():
                 tools.append(
                     to_pydanticai_tool(
-                        tool=tool, system_prompt_builder=self.get_system_prompt, enabled=lambda: capability.enabled
+                        tool=tool,
+                        system_prompt_builder=self.get_system_prompt,
+                        # Provide `capability` as a default arg so the current loop value is 'captured'
+                        enabled=lambda cap=capability: cap.enabled,
                     )
                 )
 
         return tools
 
     async def __aenter__(self) -> Self:
-        # Init all capabilities in parallel
-        await asyncio.gather(*(c.setup() for c in self._capabilities))
+        # TODO: Could potentially setup capabilities in parallel, but this causes error:
+        # RuntimeError: Attempted to exit cancel scope in a different task than it was entered in
+        for c in self._capabilities:
+            await c.setup()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await asyncio.gather(*(c.teardown() for c in self._capabilities))
+        for c in self._capabilities:
+            await c.teardown()
         return self
