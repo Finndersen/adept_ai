@@ -6,8 +6,8 @@ from jinja2 import Template
 from pydantic_ai.tools import Tool as PydanticTool
 
 from dev_ai.framework.capabilities import Capability
-from dev_ai.framework.tool import ParameterSpec, Tool, ToolError
 from dev_ai.framework.pydantic_ai import to_pydanticai_tool
+from dev_ai.framework.tool import ParameterSpec, Tool, ToolError
 
 
 class AgentBuilder:
@@ -31,8 +31,12 @@ class AgentBuilder:
         return Tool(
             name="enable_capability",
             description="Enable a capability",
-            parameters={
-                "name": ParameterSpec(type="string", description="The name of the capability to enable"),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "name": ParameterSpec(type="string", description="The name of the capability to enable")
+                },
+                "required": ["name"],
             },
             function=self.enable_capability,
             updates_system_prompt=True,

@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, Literal
+from typing import Awaitable, Callable, Literal, TypedDict, cast
 
 from pydantic import BaseModel
 from pydantic_ai._pydantic import function_schema
@@ -7,9 +7,24 @@ from pydantic_ai.tools import GenerateToolJsonSchema
 ToolFunction = Callable[..., Awaitable[str]] | Callable[..., str]
 
 
-class ParameterSpec(BaseModel):
-    type: Literal["string", "integer", "boolean", "array", "object"]
-    description: str | None = None
+class RequiredParams(TypedDict):
+    type: Literal["string", "number", "boolean", "array", "object"]
+
+
+class OptionalParams(TypedDict, total=False):
+    description: str
+    # Only relevant to specific types
+    items: dict | list
+
+
+class ParameterSpec(RequiredParams, OptionalParams):
+    pass
+
+
+class ToolInputSchema(TypedDict):
+    type: Literal["object"]
+    properties: dict[str, ParameterSpec]
+    required: list[str]
 
 
 class ToolCallError(Exception):
@@ -27,7 +42,7 @@ class Tool(BaseModel):
 
     name: str
     description: str
-    parameters: dict[str, Any]
+    input_schema: ToolInputSchema
     function: ToolFunction
     updates_system_prompt: bool = False
 
@@ -56,7 +71,7 @@ class Tool(BaseModel):
         return cls(
             name=name,
             description=description,
-            parameters=schema["json_schema"],
+            input_schema=cast(ToolInputSchema, schema["json_schema"]),
             function=function,
             updates_system_prompt=updates_system_prompt,
         )
@@ -66,5 +81,3 @@ class ToolError(Exception):
     """Exception raised when a tool function fails."""
 
     pass
-
-
