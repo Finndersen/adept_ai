@@ -4,14 +4,13 @@ from typing import Awaitable, Callable, Literal, TypedDict, cast
 
 from anyio.to_thread import run_sync
 from pydantic import BaseModel
-from pydantic_ai._pydantic import function_schema
-from pydantic_ai.tools import GenerateToolJsonSchema
+from pydantic_ai.tools import Tool as PydanticTool
 
 ToolFunction = Callable[..., Awaitable[str]] | Callable[..., str]
 
 
 class RequiredParams(TypedDict):
-    type: Literal["string", "number", "boolean", "array", "object"]
+    type: Literal["string", "number", "integer", "boolean", "array", "object"]
 
 
 class OptionalParams(TypedDict, total=False):
@@ -60,21 +59,13 @@ class Tool(BaseModel):
         """
         Creates a Tool instance from a function, automatically constructing the input schema
         """
-        schema = function_schema(
-            function=function,
-            takes_ctx=False,
-            docstring_format="auto",
-            require_parameter_descriptions=False,
-            schema_generator=GenerateToolJsonSchema,
-        )
-
-        description = description or schema["description"]
-        name = name or function.__name__
+        # Use PydanticAI Tool to do the work of constructing JSON schema from function signature
+        pydantic_ai_tool = PydanticTool(function=function, name=name, description=description)
 
         return cls(
-            name=name,
-            description=description,
-            input_schema=cast(ToolInputSchema, schema["json_schema"]),
+            name=pydantic_ai_tool.name,
+            description=pydantic_ai_tool.description,
+            input_schema=cast(ToolInputSchema, pydantic_ai_tool._base_parameters_json_schema),
             function=function,
             updates_system_prompt=updates_system_prompt,
         )
