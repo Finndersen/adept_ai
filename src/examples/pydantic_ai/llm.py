@@ -2,11 +2,9 @@
 
 import os
 import time
-from pathlib import Path
 from typing import cast
 
 import logfire
-from dotenv import load_dotenv
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.messages import ModelMessage, ModelResponse
 from pydantic_ai.models import KnownModelName, Model, ModelRequestParameters
@@ -51,15 +49,6 @@ def build_model_from_name_and_api_key(model_name: KnownModelName | None, api_key
     Build a model from a model name and API key.
     If no model name is provided, will try to infer from environment variables.
     """
-
-    # Load environment variables from .env files
-    # Try loading from home directory first, then current directory
-    env_paths = [Path.home() / ".env", Path.cwd() / ".env"]
-
-    for env_path in env_paths:
-        if env_path.exists():
-            load_dotenv(env_path)
-
     if not model_name:
         if os.environ.get("OPENAI_API_KEY"):
             logfire.info("Detected OPENAI_API_KEY, using openai:gpt-4o")

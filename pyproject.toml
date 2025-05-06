@@ -16,16 +16,15 @@ dependencies = [
     "aiofiles",
     "jinja2>=3.1.6",
     "decorator>=5.2.1",
-    #    "aider-chat>=0.77.1",
     "mcp[cli]>=1.7.1",
-    "pytest-asyncio>=0.26.0",
 ]
 
 [project.scripts]
 dev = "dev_ai.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "ruff", "pyright"]
+dev = ["pytest", "pytest-cov", "ruff", "pyright", "pytest-asyncio>=0.26.0"]
+langchain = ["langchain>=0.3.25", "langgraph>=0.4.1", "langchain-google-genai>=2.1.4"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

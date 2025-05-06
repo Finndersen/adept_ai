@@ -49,7 +49,7 @@ class Capability(ABC):
         """
         pass
 
-    async def teardown(self) -> None:   # noqa: B027
+    async def teardown(self) -> None:  # noqa: B027
         """
         Perform any necessary teardown or cleanup
         :return:

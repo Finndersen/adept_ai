@@ -5,9 +5,9 @@ from typing import Annotated, Iterable, List
 import aiofiles
 from git import InvalidGitRepositoryError, NoSuchPathError, Repo
 
-from examples.console import console
 from dev_ai.capabilities.base import Capability
 from dev_ai.tool import Tool, ToolError
+from examples.console import console
 
 
 class FileSystemCapability(Capability):

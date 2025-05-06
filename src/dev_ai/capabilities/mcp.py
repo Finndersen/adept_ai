@@ -187,6 +187,3 @@ class StdioMCPCapability(BaseMCPCapability):
 
     def _init_mcp_client(self) -> _AsyncGeneratorContextManager:
         return stdio_client(self._server_params)
-
-
-

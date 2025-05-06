@@ -1,38 +1,20 @@
-import os
-from pathlib import Path
-
 from pydantic_ai import Agent
 from pydantic_ai.messages import ModelMessage
-from pydantic_ai.models import Model
 from rich.prompt import Prompt
 
+from examples.agent_builder import get_agent_builder
 from examples.console import console
-from dev_ai.agent_builder import AgentBuilder
-from dev_ai.capabilities.filesystem import FileSystemCapability
-from dev_ai.capabilities.mcp import StdioMCPCapability
+
+from .llm import build_model_from_name_and_api_key
 
 EXIT_COMMANDS = ["/quit", "/exit", "/q"]
-ROLE = """You are a helpful assistant with strong software development and engineering skills,
-whose purpose is to help the user with their software development or general computer use needs."""
 
 
-async def run(model: Model, prompt: str):
-    """Initialise services and run agent conversation loop."""
-    current_working_directory = Path.cwd()
+async def run_pydantic_ai(model_name: str | None, api_key: str | None = None):
+    # Build the model from name and API key
+    model = build_model_from_name_and_api_key(model_name, api_key)
 
-    async with AgentBuilder(
-        role=ROLE,
-        capabilities=[
-            FileSystemCapability(root_directory=current_working_directory),
-            StdioMCPCapability(
-                "github_integration",
-                "Manage GitHub repositories, enabling file operations, search functionality, and integration with the GitHub API for seamless collaborative software development.",
-                command="npx",
-                args=["-y", "@modelcontextprotocol/server-github"],
-                env={"GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv("GITHUB_ACCESS_TOKEN", "")},
-            ),
-        ],
-    ) as builder:
+    async with get_agent_builder() as builder:
         agent = Agent(model=model, tools=await builder.get_pydantic_ai_tools(), instrument=True)
 
         # Configure dynamic system prompt
@@ -43,6 +25,11 @@ async def run(model: Model, prompt: str):
         message_history: list[ModelMessage] = []
 
         while True:
+            prompt = Prompt.ask("You").strip()
+
+            if not prompt:
+                continue
+
             if prompt.startswith("/"):
                 if prompt.lower() in EXIT_COMMANDS:
                     break
@@ -51,9 +38,5 @@ async def run(model: Model, prompt: str):
 
             response = await agent.run(prompt, message_history=message_history)
 
-            assert response is not None
-            console.print(f"Dev AI: {response.data}")
+            console.print(f"AI Agent: {response.output}")
             message_history = response.all_messages()
-            prompt = None
-            while not prompt:
-                prompt = Prompt.ask("You").strip()
