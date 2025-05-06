@@ -3,11 +3,11 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, Union, 
 
 from pydantic_ai import RunContext
 from pydantic_ai import Tool as PydanticTool
-from pydantic_ai._pydantic import _is_call_ctx
+from pydantic_ai._pydantic import takes_ctx
 from pydantic_ai.messages import SystemPromptPart
 from pydantic_ai.tools import ToolDefinition
 
-from dev_ai.framework.tool import ParameterSpec, Tool, ToolError, ToolInputSchema
+from dev_ai.framework.tool import ParameterSpec, Tool, ToolInputSchema
 
 
 def wrap_tool_func_for_pydantic(
@@ -19,9 +19,8 @@ def wrap_tool_func_for_pydantic(
     - Forces a rebuild of the system prompt if updates_system_prompt is True
     This function can then be provided to PydanticAI as a tool function
     """
-
     # Check if the tool function has a `ctx: RunContext` arg
-    has_ctx_param = tool_func_has_ctx_arg(tool.function)
+    has_ctx_param = takes_ctx(tool.function)
 
     async def _wrapper(ctx: RunContext, *args, **kwargs) -> str:
         if has_ctx_param:
@@ -39,15 +38,14 @@ def wrap_tool_func_for_pydantic(
     # Set the signature of the wrapper to match the tool function, but with the RunContext first argument
     tool_func_sig = json_schema_to_signature(tool.input_schema)
 
-    if has_ctx_param:
-        wrapper_sig = tool_func_sig
-    else:
-        wrapper_sig = tool_func_sig.replace(
-            parameters=[
-                inspect.Parameter(name="ctx", kind=inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=RunContext),
-                *tool_func_sig.parameters.values(),
-            ]
-        )
+    # Always need to add the `ctx` arg to the signature, since even if it exists in the original tool function,
+    # the PydanticAI function_schema() removes it
+    wrapper_sig = tool_func_sig.replace(
+        parameters=[
+            inspect.Parameter(name="ctx", kind=inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=RunContext),
+            *tool_func_sig.parameters.values(),
+        ]
+    )
     _wrapper.__signature__ = wrapper_sig
     # Set the wrapper annotations to match the tool function, but with the RunContext first argument
     tool_func_annotations = {name: param.annotation for name, param in wrapper_sig.parameters.items()}
@@ -85,52 +83,6 @@ def to_pydanticai_tool(
         prepare=enable_tool,
     )
 
-
-def tool_func_has_ctx_arg(function: Callable) -> bool:
-    """
-    Check whether the tool function has a `ctx: RunContext` argument.
-    If it has a `ctx` argument, it must be of type `RunContext`, otherwise error will be raised.
-
-    Args:
-        function: The tool function to validate.
-
-    Returns:
-        bool: True if the function has a first parameter named 'ctx' with RunContext type, False otherwise.
-
-    Raises:
-        ToolError: If the function has a first parameter named 'ctx' that doesn't have the RunContext type.
-    """
-    # Get the function signature
-    sig = inspect.signature(function)
-    parameters = list(sig.parameters.values())
-
-    # Check if there are any parameters
-    if not parameters:
-        return False
-
-    # Get the first parameter
-    first_param = parameters[0]
-
-    # Check if the first parameter is named 'ctx'
-    if first_param.name == "ctx":
-        # Check if the parameter has a type annotation
-        if first_param.annotation == inspect.Parameter.empty:
-            raise ToolError(
-                "Tool function has a 'ctx' parameter without type annotation. "
-                "If you include a 'ctx' parameter, it must be of type RunContext."
-            )
-
-        # Check if the type is RunContext or a generic version of RunContext
-        param_type = first_param.annotation
-        if not _is_call_ctx(param_type):
-            raise ToolError(
-                f"Tool function has a 'ctx' parameter with type {param_type}, not RunContext. "
-                f"If you include a 'ctx' parameter, it must be of type RunContext."
-            )
-
-        return True
-
-    return False
 
 def map_json_type_to_python(prop_schema: ParameterSpec) -> Type[Any] | Any:
     """Maps a JSON Schema property definition to a Python type hint."""
