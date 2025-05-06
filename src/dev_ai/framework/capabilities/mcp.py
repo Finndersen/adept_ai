@@ -1,7 +1,7 @@
 from contextlib import _AsyncGeneratorContextManager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Container, Protocol, Sequence
+from typing import Any, Container, Protocol, Sequence
 
 from mcp import ClientSession, StdioServerParameters, stdio_client
 from mcp import Resource as MCPResourceMetadata
@@ -76,24 +76,24 @@ class BaseMCPCapability(Capability):
         await self._mcp_client.__aexit__(None, None, None)
 
     async def get_tools(self) -> list[Tool]:
-        def mcptool_to_tool(mcp_tool: MCPTool) -> Tool:
-            async def call_mcp_tool(**kwargs):
-                tool_result = await self.mcp_session.call_tool(mcp_tool.name, arguments=kwargs)
-                # Only support TextContent for now
-                content = "\n".join(content.text for content in tool_result.content)
-                if tool_result.isError:
-                    content = "Error calling tool: " + content
-                return content
+        return [self.mcptool_to_tool(tool) for tool in await self._get_allowed_mcp_tools()]
 
-            return Tool(
-                name=mcp_tool.name,
-                description=mcp_tool.description or "",
-                input_schema=mcp_tool.inputSchema,
-                function=call_mcp_tool,
-                updates_system_prompt=False,  # TODO: Allow specifying which tools can update resources?
-            )
+    def mcptool_to_tool(self, mcp_tool: MCPTool) -> Tool:
+        async def call_mcp_tool(**kwargs: Any):
+            tool_result = await self.mcp_session.call_tool(mcp_tool.name, arguments=kwargs)
+            # Only support TextContent for now
+            content = "\n".join(content.text for content in tool_result.content)
+            if tool_result.isError:
+                content = "Error calling tool: " + content
+            return content
 
-        return [mcptool_to_tool(tool) for tool in await self._get_allowed_mcp_tools()]
+        return Tool(
+            name=mcp_tool.name,
+            description=mcp_tool.description or "",
+            input_schema=mcp_tool.inputSchema,
+            function=call_mcp_tool,
+            updates_system_prompt=False,  # TODO: Allow specifying which tools can update resources?
+        )
 
     async def get_context_data(self) -> str:
         resource_data = [
@@ -187,3 +187,6 @@ class StdioMCPCapability(BaseMCPCapability):
 
     def _init_mcp_client(self) -> _AsyncGeneratorContextManager:
         return stdio_client(self._server_params)
+
+
+

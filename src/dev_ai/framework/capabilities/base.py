@@ -42,14 +42,14 @@ class Capability(ABC):
         """
         return ""
 
-    async def setup(self) -> None:
+    async def setup(self) -> None:  # noqa: B027
         """
         Perform any necessary setup or pre-processing required before tools or context data can be provided.
         :return:
         """
         pass
 
-    async def teardown(self) -> None:
+    async def teardown(self) -> None:   # noqa: B027
         """
         Perform any necessary teardown or cleanup
         :return:
