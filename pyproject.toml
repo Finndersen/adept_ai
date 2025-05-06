@@ -18,6 +18,7 @@ dependencies = [
     "decorator>=5.2.1",
     #    "aider-chat>=0.77.1",
     "mcp[cli]>=1.7.1",
+    "pytest-asyncio>=0.26.0",
 ]
 
 [project.scripts]
@@ -44,6 +45,7 @@ line-ending = "auto"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
+asyncio_mode = "auto"
 
 [tool.pyright]
 include = ["src"]
