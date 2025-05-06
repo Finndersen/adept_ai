@@ -2,19 +2,15 @@
 
 import argparse
 import asyncio
+from pathlib import Path
 
 import logfire
-from rich.console import Console
-
-from examples.pydantic_ai.llm import build_model_from_name_and_api_key
-from examples.pydantic_ai.run import run
+from dotenv import load_dotenv
 
 
 def main():
     """Command-line interface for dev_ai."""
     parser = argparse.ArgumentParser(description="Run an AI development assistant with a specified LLM model.")
-
-    parser.add_argument("prompt", type=str, help="Initial prompt to send to the AI assistant")
 
     parser.add_argument(
         "--model",
@@ -22,6 +18,15 @@ def main():
         default=None,
         help="LLM model name to use, e.g. gpt-4o, claude-3-7-sonnet-latest, gemini-2.0-flash. "
         "Can infer from environment variable API keys if not provided.",
+    )
+
+    parser.add_argument(
+        "example",
+        nargs="?",
+        type=str,
+        choices=["pydantic_ai", "langchain"],
+        default="pydantic_ai",
+        help="Which framework example to test",
     )
 
     parser.add_argument(
@@ -41,18 +46,25 @@ def main():
 
     logfire.configure(send_to_logfire="if-token-present", console=None if args.debug else False)
 
-    # Build the model from name and API key
-    model = build_model_from_name_and_api_key(args.model, args.api_key)
-    if model is None:
-        console = Console()
-        console.print("[bold red]Error:[/] Could not build a model. Please provide a valid model name and/or API key.")
-        return 1
-
     # Run the assistant
-    asyncio.run(run(model=model, prompt=args.prompt))
+    from examples.langchain.run import run_langchain
+    from examples.pydantic_ai.run import run_pydantic_ai
+
+    RUN_FUNCS = {
+        "pydantic_ai": run_pydantic_ai,
+        "langchain": run_langchain,
+    }
+    asyncio.run(RUN_FUNCS[args.example](model_name=args.model, api_key=args.api_key))
 
     return 0
 
 
 if __name__ == "__main__":
+    # Load environment variables from .env files
+    # Try loading from home directory first, then current directory
+    env_paths = [Path.home() / ".env", Path.cwd() / ".env"]
+    for env_path in env_paths:
+        if env_path.exists():
+            load_dotenv(env_path)
+
     exit(main())

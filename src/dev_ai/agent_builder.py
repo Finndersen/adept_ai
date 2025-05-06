@@ -36,7 +36,11 @@ class AgentBuilder:
             input_schema={
                 "type": "object",
                 "properties": {
-                    "name": ParameterSpec(type="string", description="The name of the capability to enable")
+                    "name": ParameterSpec(
+                        type="string",
+                        description="The name of the capability to enable",
+                        enum=[capability.name for capability in self.disabled_capabilities],
+                    )
                 },
                 "required": ["name"],
             },
@@ -77,7 +81,7 @@ class AgentBuilder:
         """
         Returns the tools from the enabled capabilities
         """
-        if any((not c.enabled) for c in self._capabilities):
+        if self.disabled_capabilities:
             tools = [self._get_enable_capabilities_tool()]
         else:
             tools = []
