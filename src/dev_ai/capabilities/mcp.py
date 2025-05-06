@@ -9,8 +9,8 @@ from mcp import Tool as MCPTool
 from mcp.types import TextResourceContents
 from pydantic import AnyUrl
 
-from dev_ai.framework.capabilities import Capability
-from dev_ai.framework.tool import Tool
+from dev_ai.capabilities import Capability
+from dev_ai.tool import Tool
 
 
 class UninitialisedMCPSessionError(Exception):

@@ -1,6 +1,6 @@
 from abc import ABC
 
-from dev_ai.framework.tool import Tool
+from dev_ai.tool import Tool
 
 
 class Capability(ABC):

@@ -6,9 +6,9 @@ from pydantic_ai import RunContext
 from pydantic_ai.common_tools.duckduckgo import DuckDuckGoResult, DuckDuckGoSearchTool
 from rich.prompt import Confirm
 
-from dev_ai.console import console
-from dev_ai.deps import AgentDeps
-from dev_ai.framework.tool import ToolError
+from examples.console import console
+from examples.pydantic_ai.deps import AgentDeps
+from dev_ai.tool import ToolError
 
 
 async def search_web(query: Annotated[str, "The search query"]) -> list[DuckDuckGoResult]:
@@ -32,7 +32,7 @@ async def run_bash_command(
     Set destructive to True if it is possible that the command will modify the system.
     """
     if destructive:
-        if not Confirm.ask(f"Run potentially destructive command: {command}?", default=False, console=ctx.deps.console):
+        if not Confirm.ask(f"Run potentially destructive command: {command}?", default=False, console=console):
             return "Command cancelled by user"
 
     try:

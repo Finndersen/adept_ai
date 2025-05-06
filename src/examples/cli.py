@@ -6,8 +6,8 @@ import asyncio
 import logfire
 from rich.console import Console
 
-from dev_ai.llm import build_model_from_name_and_api_key
-from dev_ai.run import run
+from examples.pydantic_ai.llm import build_model_from_name_and_api_key
+from examples.pydantic_ai.run import run
 
 
 def main():

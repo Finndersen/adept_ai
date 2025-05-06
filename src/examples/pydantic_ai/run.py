@@ -6,10 +6,10 @@ from pydantic_ai.messages import ModelMessage
 from pydantic_ai.models import Model
 from rich.prompt import Prompt
 
-from dev_ai.console import console
-from dev_ai.framework.agent_builder import AgentBuilder
-from dev_ai.framework.capabilities.filesystem import FileSystemCapability
-from dev_ai.framework.capabilities.mcp import StdioMCPCapability
+from examples.console import console
+from dev_ai.agent_builder import AgentBuilder
+from dev_ai.capabilities.filesystem import FileSystemCapability
+from dev_ai.capabilities.mcp import StdioMCPCapability
 
 EXIT_COMMANDS = ["/quit", "/exit", "/q"]
 ROLE = """You are a helpful assistant with strong software development and engineering skills,

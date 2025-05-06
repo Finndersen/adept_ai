@@ -7,7 +7,7 @@ from pydantic_ai._pydantic import takes_ctx
 from pydantic_ai.messages import SystemPromptPart
 from pydantic_ai.tools import ToolDefinition
 
-from dev_ai.framework.tool import ParameterSpec, Tool, ToolInputSchema
+from dev_ai.tool import ParameterSpec, Tool, ToolInputSchema
 
 
 def wrap_tool_func_for_pydantic(
