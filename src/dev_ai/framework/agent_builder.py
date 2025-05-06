@@ -138,4 +138,3 @@ class AgentBuilder:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         for c in self._capabilities:
             await c.teardown()
-        return self
