@@ -24,7 +24,16 @@ class AgentBuilder:
     def __init__(self, role: str, capabilities: list[Capability], system_prompt_template: Path | None = None) -> None:
         self._role = role
         self._system_prompt_template = system_prompt_template or DEFAULT_PROMPT_TEMPLATE
-        self._capabilities = capabilities
+        self._capabilities = self._validate_capabilities(capabilities)
+
+    @staticmethod
+    def _validate_capabilities(capabilities) -> list[Capability]:
+        seen_names = set()
+        for capability in capabilities:
+            if capability.name.lower() in seen_names:
+                raise ValueError(f"Duplicate capability name: {capability.name}")
+            seen_names.add(capability.name.lower())
+        return capabilities
 
     def _get_enable_capabilities_tool(self) -> Tool:
         """
@@ -54,10 +63,17 @@ class AgentBuilder:
         """
         for capability in self._capabilities:
             if capability.name.lower() == name.lower():
-                capability.enabled = True
-                return f"Capability {name} enabled"
+                capability.enable()
+                return f"Capability '{name}' enabled"
 
         raise ToolError(f"Capability {name} not found")
+
+    def enable_all_capabilities(self) -> None:
+        """
+        Enables all capabilities
+        """
+        for capability in self._capabilities:
+            capability.enable()
 
     async def get_system_prompt(self) -> str:
         """
@@ -74,7 +90,6 @@ class AgentBuilder:
             enabled_capabilities=self.enabled_capabilities,
             disabled_capabilities=self.disabled_capabilities,
         )
-
         return prompt
 
     async def get_tools(self) -> list[Tool]:
