@@ -1,16 +1,20 @@
+import logging
 from contextlib import _AsyncGeneratorContextManager
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Container, Protocol, Sequence
+from typing import Any, Callable, Container, Sequence, Self
 
-from mcp import ClientSession, StdioServerParameters, stdio_client
+from mcp import ClientSession
 from mcp import Resource as MCPResourceMetadata
 from mcp import Tool as MCPTool
+from mcp.client.session import LoggingFnT, SamplingFnT
 from mcp.types import TextResourceContents
 from pydantic import AnyUrl
 
 from dev_ai.capabilities import Capability
 from dev_ai.tool import Tool
+
+from ...utils import cached_method
+from .client_session import CustomClientSession
 
 
 class UninitialisedMCPSessionError(Exception):
@@ -23,12 +27,33 @@ class MCPResource:
     content: list[str]
 
 
-class IncludeResource(Protocol):
-    # Signature for function that determines whether a resource should be included in context
-    def __call__(self, resource_uri: AnyUrl) -> bool: ...
+# Signature for function that determines whether a resource should be included in context
+ResourceURIChecker = Callable[[AnyUrl], bool]
 
 
 class BaseMCPCapability(Capability):
+    """
+    Base class for a capability which provides access to an MCP server's resources and tools.
+    Features:
+    - Handles MCP server lifecycle and client session
+    - Specify which tools to use, and handles tool execution
+    - Specify which resources to include in the initial context data
+    - Provide callbacks to handle sampling and logging events from the MCP server
+    - Smart tool and resource list caching to avoid unnecessary requests to the server,
+        with server notification handling to reset the cache
+
+    Can also be used standalone as a powerful MCP client:
+    ```
+    async with StdioMCPCapability(...) as mcp_client:
+        tools = mcp_client.get_tools()
+
+        resources = await mcp_client.list_all_resources()
+        for resource in resources:
+            resource_content = await mcp_client.read_resource(resource.uri)
+            print(resource_content)
+
+    ```
+    """
     _mcp_client: _AsyncGeneratorContextManager | None
     _mcp_session: ClientSession | None
     _allowed_tools: Sequence[str] | None
@@ -38,8 +63,10 @@ class BaseMCPCapability(Capability):
         name: str,
         description: str,
         tools: Container[str] | None = None,
-        resources: IncludeResource | bool = False,
-        enabled: bool = False,
+        resources: ResourceURIChecker | bool = False,
+        sampling_callback: SamplingFnT | None = None,
+        logging_callback: LoggingFnT | None = None,
+        **kwargs,
     ):
         """
 
@@ -47,8 +74,10 @@ class BaseMCPCapability(Capability):
         :param description: Description of MCP capability.
         :param tools: Collection of allowed tool names, or None to allow all available tools.
         :param resources: Whether to include resources in the initial context.
-        Either a global boolean for all resources, or a callable that returns whether the resource URI should be included.
-        :param enabled:
+            Either a global boolean for all resources, or a callable that returns whether the resource URI should be included.
+        :param sampling_callback: Callback function to be called to handle a sampling request from the MCP server.
+        :param logging_callback: Callback function to be called to handle a logging event from the MCP server.
+        :param enabled: Whether the capability is initially enabled.
         """
         self.name = name
         self.description = description
@@ -56,17 +85,33 @@ class BaseMCPCapability(Capability):
         self._include_resources = resources
         self._mcp_client = None
         self._mcp_session = None
-        super().__init__(enabled=enabled)
+        self._sampling_callback = sampling_callback
+        self._logging_callback = logging_callback
+        super().__init__(**kwargs)
 
     def _init_mcp_client(self) -> _AsyncGeneratorContextManager:
         raise NotImplementedError()
 
+    async def __aenter__(self) -> Self:
+        await self.setup()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.teardown()
+
     async def setup(self) -> None:
         # Start MCP client and session
-        print(f"Starting MCP server: {self.name}")
+        logging.debug(f"Starting MCP server: {self.name}")
         self._mcp_client = self._init_mcp_client()
         read, write = await self._mcp_client.__aenter__()
-        self._mcp_session = ClientSession(read, write)
+        self._mcp_session = CustomClientSession(
+            read,
+            write,
+            sampling_callback=self._sampling_callback,
+            logging_callback=self._logging_callback,
+            tool_list_changed_callback=self._handle_tool_list_changed,
+            resource_list_changed_callback=self._handle_resource_list_changed,
+        )
         await self._mcp_session.__aenter__()
         await self._mcp_session.initialize()
 
@@ -75,6 +120,15 @@ class BaseMCPCapability(Capability):
         await self._mcp_session.__aexit__(None, None, None)
         await self._mcp_client.__aexit__(None, None, None)
 
+    @property
+    def mcp_session(self) -> ClientSession:
+        if self._mcp_session is None:
+            raise UninitialisedMCPSessionError(
+                "Must initialise MCP session before retrieving tools or resources. Use the AgentBuilder as a context manager"
+            )
+        return self._mcp_session
+
+    ## TOOLS ##
     async def get_tools(self) -> list[Tool]:
         return [self.mcptool_to_tool(tool) for tool in await self._get_allowed_mcp_tools()]
 
@@ -105,41 +159,43 @@ class BaseMCPCapability(Capability):
         else:
             return ""
 
-    @property
-    def mcp_session(self) -> ClientSession:
-        if self._mcp_session is None:
-            raise UninitialisedMCPSessionError(
-                "Must initialise MCP session before retrieving tools or resources. Use the AgentBuilder as a context manager"
-            )
-        return self._mcp_session
-
+    @cached_method
     async def _get_allowed_mcp_tools(self) -> list[MCPTool]:
         tools_result = await self.mcp_session.list_tools()
         return [
             tool for tool in tools_result.tools if (self._allowed_tools is None or tool.name in self._allowed_tools)
         ]
 
+    async def _handle_tool_list_changed(self) -> None:
+        # Reset the tool list cache when the server notifies that it has changed
+        self._get_allowed_mcp_tools.clear_cache()
+
+    ## RESOURCES ##
     async def _get_included_resources(self) -> list[MCPResource]:
-        # TODO: Cache result so its not regenerated every time system prompt is
+        """
+        Get the metadata and content of all resources that should be included in the context.
+        :return:
+        """
         if self._include_resources is False:
             return []
 
         resources = []
         # Get data for all included resources (could parallelize this)
-        for res_meta in await self._list_all_resources():
+        for res_meta in await self.list_all_resources():
             if self._should_include_resource(res_meta.uri):
-                resources.append(MCPResource(metadata=res_meta, content=await self._read_resource(res_meta.uri)))
+                resources.append(MCPResource(metadata=res_meta, content=await self.read_resource(res_meta.uri)))
 
         return resources
 
     def _should_include_resource(self, resource_uri: AnyUrl) -> bool:
         return self._include_resources(resource_uri) if callable(self._include_resources) else self._include_resources
 
-    async def _list_all_resources(self) -> list[MCPResourceMetadata]:
+    @cached_method
+    async def list_all_resources(self) -> list[MCPResourceMetadata]:
         resources_result = await self.mcp_session.list_resources()
         return resources_result.resources
 
-    async def _read_resource(self, resource_uri: AnyUrl) -> list[str]:
+    async def read_resource(self, resource_uri: AnyUrl) -> list[str]:
         """
         Read the content of a resource. Returns a list of either text, or base64-encoded string for binary data
         :param resource_uri:
@@ -151,39 +207,6 @@ class BaseMCPCapability(Capability):
             for content in resource_result.contents
         ]
 
-
-class StdioMCPCapability(BaseMCPCapability):
-    """
-    Capability which provides access to an STDIO MCP server's resources and tools.
-    """
-
-    def __init__(
-        self,
-        name: str,
-        description: str,
-        command: str,
-        args: list[str],
-        env: dict[str, str] | None = None,
-        cwd: str | Path | None = None,
-        tools: Container[str] | None = None,
-        enabled: bool = False,
-    ):
-        """
-
-        :param command: The executable to run to start the server.
-        :param args: Command line arguments to pass to the executable.
-        :param env: The environment vars to use when spawning the server process.
-        :param cwd: The working directory to use when spawning the server process.
-        :param tools:
-        :param enabled:
-        """
-        self._server_params = StdioServerParameters(
-            command=command,
-            args=args,
-            env=env,
-            cwd=Path(cwd).resolve() if cwd else Path.cwd(),
-        )
-        super().__init__(name=name, description=description, tools=tools, enabled=enabled)
-
-    def _init_mcp_client(self) -> _AsyncGeneratorContextManager:
-        return stdio_client(self._server_params)
+    async def _handle_resource_list_changed(self) -> None:
+        # Reset the resource list cache when the server notifies that it has changed
+        self.list_all_resources.clear_cache()
