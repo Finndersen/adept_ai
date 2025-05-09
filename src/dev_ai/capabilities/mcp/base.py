@@ -1,7 +1,7 @@
 import logging
 from contextlib import _AsyncGeneratorContextManager
 from dataclasses import dataclass
-from typing import Any, Callable, Container, Sequence, Self
+from typing import Any, Callable, Container, Self, Sequence
 
 from mcp import ClientSession
 from mcp import Resource as MCPResourceMetadata
@@ -12,8 +12,8 @@ from pydantic import AnyUrl
 
 from dev_ai.capabilities import Capability
 from dev_ai.tool import Tool
+from dev_ai.utils import cached_method
 
-from ...utils import cached_method
 from .client_session import CustomClientSession
 
 
@@ -54,6 +54,7 @@ class BaseMCPCapability(Capability):
 
     ```
     """
+
     _mcp_client: _AsyncGeneratorContextManager | None
     _mcp_session: ClientSession | None
     _allowed_tools: Sequence[str] | None
@@ -64,6 +65,7 @@ class BaseMCPCapability(Capability):
         description: str,
         tools: Container[str] | None = None,
         resources: ResourceURIChecker | bool = False,
+        instructions: list[str] | None = None,
         sampling_callback: SamplingFnT | None = None,
         logging_callback: LoggingFnT | None = None,
         **kwargs,
@@ -75,6 +77,7 @@ class BaseMCPCapability(Capability):
         :param tools: Collection of allowed tool names, or None to allow all available tools.
         :param resources: Whether to include resources in the initial context.
             Either a global boolean for all resources, or a callable that returns whether the resource URI should be included.
+        :param instructions: Instructions to be added to the system prompt, to guide usage of the MCP server
         :param sampling_callback: Callback function to be called to handle a sampling request from the MCP server.
         :param logging_callback: Callback function to be called to handle a logging event from the MCP server.
         :param enabled: Whether the capability is initially enabled.
@@ -85,6 +88,7 @@ class BaseMCPCapability(Capability):
         self._include_resources = resources
         self._mcp_client = None
         self._mcp_session = None
+        self._instructions = instructions or []
         self._sampling_callback = sampling_callback
         self._logging_callback = logging_callback
         super().__init__(**kwargs)
@@ -127,6 +131,10 @@ class BaseMCPCapability(Capability):
                 "Must initialise MCP session before retrieving tools or resources. Use the AgentBuilder as a context manager"
             )
         return self._mcp_session
+
+    @property
+    def prompt_instructions(self) -> list[str] | None:
+        return self._instructions
 
     ## TOOLS ##
     async def get_tools(self) -> list[Tool]:

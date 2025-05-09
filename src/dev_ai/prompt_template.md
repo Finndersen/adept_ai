@@ -11,12 +11,14 @@
 * Only respond to the user (i.e. not use a tool call) when you have completed the request and have an answer, or cannot continue without more input from the user. 
 
 {%- for capability in enabled_capabilities -%}
-{%- if capability.prompt_instructions %}
+{%- with prompt_instructions = capability.prompt_instructions %}
+{%- if prompt_instructions %}
 ## {{ capability.name }}
-{%- for instruction in capability.prompt_instructions %}
+{%- for instruction in prompt_instructions %}
 * {{ instruction }} 
 {%- endfor %}
 {%- endif %}
+{%- endwith %}
 {%- endfor %}
 
 # CAPABILITIES
