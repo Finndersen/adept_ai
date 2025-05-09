@@ -7,10 +7,8 @@ from langgraph.prebuilt import create_react_agent
 from langgraph.prebuilt.chat_agent_executor import AgentState
 from langgraph.utils.runnable import RunnableCallable
 
-from dev_ai.langchain import tool_to_langchain_tool
+from dev_ai.compat.langchain import tool_to_langchain_tool
 from examples.agent_builder import get_agent_builder
-
-EXIT_COMMANDS = ["/quit", "/exit", "/q"]
 
 AGENT_CONFIG = {"configurable": {"thread_id": "abc123"}}
 
@@ -41,5 +39,4 @@ async def run_langchain(prompt: str, model_name: str | None, api_key: str | None
 
         response = await agent.ainvoke({"messages": [HumanMessage(content=prompt)]}, config=AGENT_CONFIG)
         message = response["messages"][-1].content
-        print(response)
         print(f"AI Agent: {message}")

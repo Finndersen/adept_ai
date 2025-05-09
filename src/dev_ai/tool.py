@@ -71,7 +71,7 @@ class Tool(BaseModel):
             updates_system_prompt=updates_system_prompt,
         )
 
-    async def call(self, *args, **kwargs) -> str:
+    async def call(self, **kwargs) -> str:
         """
         Call the tool function, with logging and error handling.
         Calls function asynchronously regardless of whether it originally was or not.
@@ -79,12 +79,12 @@ class Tool(BaseModel):
         :param kwargs:
         :return:
         """
-        print(f"[bold blue]Running tool: {self.name} with args: {args} and kwargs: {kwargs}[/bold blue]")
+        print(f"[bold blue]Running tool: {self.name} with args: {kwargs}[/bold blue]")
         try:
             if inspect.iscoroutinefunction(self.function):
-                result = await self.function(*args, **kwargs)
+                result = await self.function(**kwargs)
             else:
-                wrapped_func = partial(cast(Callable[..., str], self.function), *args, **kwargs)
+                wrapped_func = partial(cast(Callable[..., str], self.function), **kwargs)
                 return await run_sync(wrapped_func)
 
             return result

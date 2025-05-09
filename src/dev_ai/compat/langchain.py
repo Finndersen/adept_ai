@@ -1,4 +1,4 @@
-from langchain_core.tools.simple import Tool as LangChainTool
+from langchain_core.tools.structured import StructuredTool as LangChainTool
 
 from dev_ai.tool import Tool
 

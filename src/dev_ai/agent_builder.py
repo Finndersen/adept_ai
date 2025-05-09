@@ -6,7 +6,7 @@ from jinja2 import Template
 from pydantic_ai.tools import Tool as PydanticTool
 
 from dev_ai.capabilities import Capability
-from dev_ai.pydantic_ai import to_pydanticai_tool
+from dev_ai.compat.pydantic_ai import to_pydanticai_tool
 from dev_ai.tool import ParameterSpec, Tool, ToolError
 
 DEFAULT_PROMPT_TEMPLATE = Path(__file__).resolve().parent / "prompt_template.md"

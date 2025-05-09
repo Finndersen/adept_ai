@@ -12,7 +12,13 @@ class CustomClientSession(ClientSession):
 
     """
 
-    def __init__(self, *args, tool_list_changed_callback: ListChangedCallback | None = None, resource_list_changed_callback: ListChangedCallback | None = None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        tool_list_changed_callback: ListChangedCallback | None = None,
+        resource_list_changed_callback: ListChangedCallback | None = None,
+        **kwargs,
+    ):
         self._tool_list_changed_callback = tool_list_changed_callback
         self._resource_list_changed_callback = resource_list_changed_callback
         super().__init__(*args, **kwargs)

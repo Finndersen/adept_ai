@@ -22,11 +22,11 @@ def wrap_tool_func_for_pydantic(
     # Check if the tool function has a `ctx: RunContext` arg
     has_ctx_param = takes_ctx(tool.function)
 
-    async def _wrapper(ctx: RunContext, *args, **kwargs) -> str:
+    async def _wrapper(ctx: RunContext, **kwargs) -> str:
         if has_ctx_param:
-            result = await tool.call(ctx, *args, **kwargs)
-        else:
-            result = await tool.call(*args, **kwargs)
+            kwargs["ctx"] = ctx
+
+        result = await tool.call(**kwargs)
 
         if tool.updates_system_prompt:
             system_prompt_part = ctx.messages[0].parts[0]

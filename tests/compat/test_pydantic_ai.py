@@ -8,8 +8,8 @@ from mcp import Tool as MCPTool
 from pydantic_ai import RunContext
 from pydantic_ai.messages import SystemPromptPart
 
-from dev_ai.capabilities.mcp import BaseMCPCapability
-from dev_ai.pydantic_ai import wrap_tool_func_for_pydantic
+from dev_ai.capabilities.mcp.base import BaseMCPCapability
+from dev_ai.compat.pydantic_ai import wrap_tool_func_for_pydantic
 from dev_ai.tool import Tool, ToolError
 
 # Define a type variable for testing generic RunContext
@@ -55,7 +55,7 @@ class TestWrapToolFuncForPydantic:
         assert sig.parameters["ctx"].annotation == RunContext
 
         # Call the wrapped function
-        result = await wrapped_func(mock_ctx, "test", 42)
+        result = await wrapped_func(mock_ctx, param1="test", param2=42)
 
         # Verify the original function was called with the correct arguments by checking the return value
         assert result == "Result: test, 42"
@@ -83,7 +83,7 @@ class TestWrapToolFuncForPydantic:
         assert sig.parameters["ctx"].annotation == RunContext
 
         # Call the wrapped function
-        result = await wrapped_func(mock_ctx, "test")
+        result = await wrapped_func(mock_ctx, param1="test")
 
         # Verify the original function was called with the correct arguments
         # The result should contain the id of the mock_ctx object
@@ -113,7 +113,7 @@ class TestWrapToolFuncForPydantic:
         wrapped_func_without_update = wrap_tool_func_for_pydantic(tool_without_update, system_prompt_spy2)
 
         # Call the wrapped function that should update the system prompt
-        await wrapped_func_with_update(mock_ctx, "test1")
+        await wrapped_func_with_update(mock_ctx, param1="test1")
 
         # Verify the system prompt builder was called
         system_prompt_spy1.assert_called_once()
@@ -126,7 +126,7 @@ class TestWrapToolFuncForPydantic:
         mock_ctx.messages[0].parts[0].content = "Different content"
 
         # Call the wrapped function that should NOT update the system prompt
-        await wrapped_func_without_update(mock_ctx, "test2")
+        await wrapped_func_without_update(mock_ctx, param1="test2")
 
         # Verify the system prompt builder was NOT called
         system_prompt_spy2.assert_not_called()
@@ -148,7 +148,7 @@ class TestWrapToolFuncForPydantic:
         wrapped_func = wrap_tool_func_for_pydantic(tool, system_prompt_builder)
 
         # Call the wrapped function - it should not raise an exception
-        result = await wrapped_func(mock_ctx, "test")
+        result = await wrapped_func(mock_ctx, param1="test")
 
         # Verify the error was properly handled and returned as a string
         assert "Error:" in result
