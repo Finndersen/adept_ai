@@ -8,17 +8,18 @@ ROLE = """You are a helpful assistant with strong software development and engin
 whose purpose is to help the user with their software development or general computer use needs."""
 
 
-def get_agent_builder():
+def get_agent_builder(enable_all_capabilities: bool = False) -> AgentBuilder:
     return AgentBuilder(
         role=ROLE,
         capabilities=[
-            FileSystemCapability(),
+            FileSystemCapability(enabled=enable_all_capabilities),
             StdioMCPCapability(
                 "github_integration",
                 "Manage GitHub repositories, enabling file operations, search functionality, and integration with the GitHub API for seamless collaborative software development.",
                 command="npx",
                 args=["-y", "@modelcontextprotocol/server-github"],
                 env={"GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv("GITHUB_ACCESS_TOKEN", "")},
+                enabled=enable_all_capabilities
             ),
         ],
     )

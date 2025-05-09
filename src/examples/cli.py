@@ -13,6 +13,12 @@ def main():
     parser = argparse.ArgumentParser(description="Run an AI development assistant with a specified LLM model.")
 
     parser.add_argument(
+        "prompt",
+        type=str,
+        help="Request prompt to provide to agent",
+    )
+
+    parser.add_argument(
         "--model",
         type=str,
         default=None,
@@ -21,8 +27,7 @@ def main():
     )
 
     parser.add_argument(
-        "example",
-        nargs="?",
+        "--framework",
         type=str,
         choices=["pydantic_ai", "langchain"],
         default="pydantic_ai",
@@ -54,7 +59,7 @@ def main():
         "pydantic_ai": run_pydantic_ai,
         "langchain": run_langchain,
     }
-    asyncio.run(RUN_FUNCS[args.example](model_name=args.model, api_key=args.api_key))
+    asyncio.run(RUN_FUNCS[args.framework](prompt=args.prompt, model_name=args.model, api_key=args.api_key))
 
     return 0
 

@@ -36,6 +36,12 @@ class Capability(ABC):
         """
         return []
 
+    def enable(self) -> None:
+        self.enabled = True
+
+    def disable(self) -> None:
+        self.enabled = False
+
     async def get_context_data(self) -> str:
         """
         Returns any relevant contextual data for the capability, to be added to the system prompt
