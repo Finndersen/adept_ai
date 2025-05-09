@@ -19,7 +19,8 @@ def get_agent_builder(enable_all_capabilities: bool = False) -> AgentBuilder:
                 command="npx",
                 args=["-y", "@modelcontextprotocol/server-github"],
                 env={"GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv("GITHUB_ACCESS_TOKEN", "")},
-                enabled=enable_all_capabilities
+                tools=["search_repositories", "read_file", "search_code"],
+                enabled=enable_all_capabilities,
             ),
         ],
     )

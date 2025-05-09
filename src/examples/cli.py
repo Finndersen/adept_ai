@@ -29,7 +29,7 @@ def main():
     parser.add_argument(
         "--framework",
         type=str,
-        choices=["pydantic_ai", "langchain"],
+        choices=["pydantic_ai", "langchain", "openai"],
         default="pydantic_ai",
         help="Which framework example to test",
     )
@@ -53,11 +53,13 @@ def main():
 
     # Run the assistant
     from examples.langchain.run import run_langchain
+    from examples.openai.run import run_openai
     from examples.pydantic_ai.run import run_pydantic_ai
 
     RUN_FUNCS = {
         "pydantic_ai": run_pydantic_ai,
         "langchain": run_langchain,
+        "openai": run_openai,
     }
     asyncio.run(RUN_FUNCS[args.framework](prompt=args.prompt, model_name=args.model, api_key=args.api_key))
 
