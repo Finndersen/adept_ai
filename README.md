@@ -44,6 +44,7 @@ system_prompt = await agent_builder.get_system_prompt()
 ```
 
 ### Using with OpenAI SDK
+Includes an `OpenAITools` helper class to translate tools to OpenAI SDK format and handle tool execution. 
 ```py
 from openai import AsyncOpenAI
 from openai.types.responses import EasyInputMessageParam
@@ -60,7 +61,6 @@ async def run_openai(prompt: str, model_name: str, api_key: str):
         while True:
             # Retrieve tools within loop so they can be dynamically updated
             tools = await agent_builder.get_tools()
-            # Helper class for translating to OpenAI tool format, and handling tool calling
             openai_tools = OpenAITools(tools)
 
             response = await client.responses.create(
@@ -84,7 +84,7 @@ async def run_openai(prompt: str, model_name: str, api_key: str):
 [See code here.](src/examples/openai/run.py)
 
 ### Using with LangChain/LangGraph
-The prebuilt `create_react_agent()` does not support dynamic updating of tools within a run, so `interrupt_after` is used to achieve this. 
+The prebuilt `create_react_agent()` does not support dynamic updating of tools within a run, so `interrupt_after` is used as a workaround to achieve this. 
 It would be possible to create a custom graph-based agent that supports this more natively. 
 ```py
 from langchain_core.messages import HumanMessage, ToolMessage
@@ -123,7 +123,9 @@ async def run_langchain(prompt: str, model_name: str, api_key: str):
 [See code here.](src/examples/langchain/run.py)
 
 ### Using with PydanticAI
-The `get_pydantic_ai_tools()` helper function uses PydanticAI's [dynamic function tools](https://ai.pydantic.dev/tools/#tool-prepare) feature, however requires all tool definitions to be built up-front, meaning MCP servers & sessions for all MCP capabilities will need to be initialised even if they are not enabled.  
+The `get_pydantic_ai_tools()` helper function uses PydanticAI's [dynamic function tools](https://ai.pydantic.dev/tools/#tool-prepare) feature, 
+however requires all tool definitions to be built up-front, meaning MCP servers & sessions for all MCP capabilities will need to be initialised even if they are not enabled.  
+A custom wrapper is also added to the tools which causes the system prompt to be dynamically updated within an agent run.
 ```py
 from pydantic_ai import Agent
 
