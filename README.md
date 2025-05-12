@@ -7,11 +7,12 @@ The two basic concepts involved are:
 - **AgentBuilder** - Translates a role and list of capabilities into an aggregated dynamically evolving [system prompt](src/dev_ai/prompt_template.md) and set of tools that can be used to define an AI agent's behaviour. 
 
 Capabilities can either be initially enabled, or a tool is provided which allows the agent to enable capabilities as required. 
+
 MCP-based capabilities enable super-simple and flexible integration of one or many MCP servers with your agent. All the complexity of MCP session lifecycle management, communication, tool calling, resource retrieval and server notification handling is taken care of automatically.  
 
-![diagram](diagram.png)
-
 Works alongside your favourite agent framework, or greatly simplifies the process of building powerful AI agents directly with a model provider's SDK or API. 
+
+![diagram](diagram.png)
 
 ## Usage & Examples
 
