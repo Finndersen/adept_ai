@@ -1,5 +1,5 @@
 import json
-from typing import Iterable
+from typing import Any, Iterable
 
 from openai.types.responses import FunctionToolParam, ResponseFunctionToolCall
 from openai.types.responses.response_input_param import FunctionCallOutput
@@ -22,7 +22,7 @@ class OpenAITools:
 
     @staticmethod
     def _tool_to_function_tool_param(tool: Tool) -> FunctionToolParam:
-        params = tool.input_schema.copy()
+        params: dict[str, Any] = tool.input_schema.copy()
         params["additionalProperties"] = False
         params["required"] = list(params["properties"].keys())  # OpenAI needs all properties to be required
         return FunctionToolParam(

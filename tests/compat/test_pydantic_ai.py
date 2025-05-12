@@ -8,7 +8,7 @@ from mcp import Tool as MCPTool
 from pydantic_ai import RunContext
 from pydantic_ai.messages import SystemPromptPart
 
-from dev_ai.capabilities.mcp.base import BaseMCPCapability
+from dev_ai.capabilities.mcp.main import MCPCapability
 from dev_ai.compat.pydantic_ai import wrap_tool_func_for_pydantic
 from dev_ai.tool import Tool, ToolError
 
@@ -71,8 +71,6 @@ class TestWrapToolFuncForPydantic:
 
         # Create a tool from the function
         tool = Tool.from_function(sample_function_with_ctx)
-
-        print(tool.input_schema)
 
         # Wrap the tool function
         wrapped_func = wrap_tool_func_for_pydantic(tool, system_prompt_builder)
@@ -175,7 +173,7 @@ class TestWrapToolFuncForPydantic:
         mock_mcp_session.call_tool = AsyncMock(return_value=tool_result)
 
         # Create a Tool instance from the MCPTool definition
-        mcp_capability = BaseMCPCapability(name="test", description="test")
+        mcp_capability = MCPCapability(name="test", description="test")
         mcp_capability._mcp_session = mock_mcp_session
         tool = mcp_capability.mcptool_to_tool(mcp_tool)
 
@@ -217,7 +215,7 @@ class TestWrapToolFuncForPydantic:
         mock_mcp_session.call_tool = AsyncMock(return_value=tool_result)
 
         # Create a Tool instance from the MCPTool definition
-        mcp_capability = BaseMCPCapability(name="test", description="test")
+        mcp_capability = MCPCapability(name="test", description="test")
         mcp_capability._mcp_session = mock_mcp_session
         tool = mcp_capability.mcptool_to_tool(mcp_tool)
 

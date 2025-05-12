@@ -3,10 +3,8 @@ from pathlib import Path
 from typing import Self
 
 from jinja2 import Template
-from pydantic_ai.tools import Tool as PydanticTool
 
 from dev_ai.capabilities import Capability
-from dev_ai.compat.pydantic_ai import to_pydanticai_tool
 from dev_ai.tool import ParameterSpec, Tool, ToolError
 
 DEFAULT_PROMPT_TEMPLATE = Path(__file__).resolve().parent / "prompt_template.md"
@@ -35,7 +33,7 @@ class AgentBuilder:
             seen_names.add(capability.name.lower())
         return capabilities
 
-    def _get_enable_capabilities_tool(self) -> Tool:
+    def get_enable_capabilities_tool(self) -> Tool:
         """
         Returns a tool which enables or disables a capability
         """
@@ -57,23 +55,22 @@ class AgentBuilder:
             updates_system_prompt=True,
         )
 
-    def enable_capability(self, name: str) -> str:
+    async def enable_capability(self, name: str) -> str:
         """
         Enables a capability by name
         """
         for capability in self._capabilities:
             if capability.name.lower() == name.lower():
-                capability.enable()
+                await capability.enable()
                 return f"Capability '{name}' enabled"
 
         raise ToolError(f"Capability {name} not found")
 
-    def enable_all_capabilities(self) -> None:
+    async def enable_all_capabilities(self) -> None:
         """
         Enables all capabilities
         """
-        for capability in self._capabilities:
-            capability.enable()
+        await asyncio.gather(*(capability.enable() for capability in self._capabilities))
 
     async def get_system_prompt(self) -> str:
         """
@@ -97,7 +94,7 @@ class AgentBuilder:
         Returns the tools from the enabled capabilities
         """
         if self.disabled_capabilities:
-            tools = [self._get_enable_capabilities_tool()]
+            tools = [self.get_enable_capabilities_tool()]
         else:
             tools = []
 
@@ -121,31 +118,6 @@ class AgentBuilder:
         Returns the disabled capabilities
         """
         return [c for c in self._capabilities if not c.enabled]
-
-    async def get_pydantic_ai_tools(self) -> list[PydanticTool]:
-        """
-        Get the tools which can be used by a PydanticAI agent.
-        Returns tools for all capabilities, but only enables the tool if the capability is enabled.
-        This is an unfortunate limitation that means that tools must be processed for all MCP capabilities even if they are not enabled.
-        """
-
-        tools = [
-            to_pydanticai_tool(
-                tool=self._get_enable_capabilities_tool(), system_prompt_builder=self.get_system_prompt, enabled=True
-            )
-        ]
-        for capability in self._capabilities:
-            for tool in await capability.get_tools():
-                tools.append(
-                    to_pydanticai_tool(
-                        tool=tool,
-                        system_prompt_builder=self.get_system_prompt,
-                        # Provide `capability` as a default arg so the current loop value is 'captured'
-                        enabled=lambda cap=capability: cap.enabled,
-                    )
-                )
-
-        return tools
 
     async def __aenter__(self) -> Self:
         # TODO: Could potentially setup capabilities in parallel, but this causes error:

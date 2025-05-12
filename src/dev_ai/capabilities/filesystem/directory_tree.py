@@ -1,10 +1,11 @@
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List
 
 from git import InvalidGitRepositoryError, NoSuchPathError, Repo
 
-from examples.console import console
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -44,7 +45,7 @@ class DirectoryTree:
             try:
                 # Try to find the git repository containing this path
                 self.git_repo = Repo(self.root_directory, search_parent_directories=True)
-                console.print(f"[dim]Respecting .gitignore rules from repository at {self.git_repo.working_dir}[/dim]")
+                logger.debug(f"Respecting .gitignore rules from repository at {self.git_repo.working_dir}")
             except (InvalidGitRepositoryError, NoSuchPathError):
                 # Not in a git repository or path doesn't exist
                 pass

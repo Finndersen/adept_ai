@@ -1,10 +1,9 @@
 from pydantic_ai import Agent
 
+from dev_ai.compat.pydantic_ai import get_pydantic_ai_tools
 from examples.agent_builder import get_agent_builder
 
 from .llm import build_model_from_name_and_api_key
-
-EXIT_COMMANDS = ["/quit", "/exit", "/q"]
 
 
 async def run_pydantic_ai(prompt: str, model_name: str | None, api_key: str | None = None):
@@ -12,7 +11,7 @@ async def run_pydantic_ai(prompt: str, model_name: str | None, api_key: str | No
     model = build_model_from_name_and_api_key(model_name, api_key)
 
     async with get_agent_builder() as builder:
-        agent = Agent(model=model, tools=await builder.get_pydantic_ai_tools(), instrument=True)
+        agent = Agent(model=model, tools=await get_pydantic_ai_tools(builder), instrument=True)
 
         # Configure the dynamic system prompt (evaluated for each new agent.run(), but not within it)
         @agent.system_prompt(dynamic=True)

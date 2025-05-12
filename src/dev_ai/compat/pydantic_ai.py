@@ -7,7 +7,41 @@ from pydantic_ai._pydantic import takes_ctx
 from pydantic_ai.messages import SystemPromptPart
 from pydantic_ai.tools import ToolDefinition
 
-from dev_ai.tool import ParameterSpec, Tool, ToolInputSchema
+from dev_ai.agent_builder import AgentBuilder
+from dev_ai.capabilities.mcp.main import MCPCapability
+from dev_ai.tool import JSONType, ParameterSpec, Tool, ToolInputSchema
+
+
+async def get_pydantic_ai_tools(agent_builder: AgentBuilder) -> list[PydanticTool]:
+    """
+    Get the tools which can be used by a PydanticAI agent.
+    Returns tools for all capabilities, but only enables the tool if the capability is enabled.
+    This is an unfortunate limitation that means that tools must be processed for all MCP capabilities even if they are not enabled.
+    """
+
+    tools = [
+        to_pydanticai_tool(
+            tool=agent_builder.get_enable_capabilities_tool(),
+            system_prompt_builder=agent_builder.get_system_prompt,
+            enabled=True,
+        )
+    ]
+    for capability in agent_builder.disabled_capabilities + agent_builder.enabled_capabilities:
+        # Need to initialise MCP session for MCP capabilities to get tools
+        if isinstance(capability, MCPCapability):
+            await capability.init_mcp_session()
+
+        for tool in await capability.get_tools():
+            tools.append(
+                to_pydanticai_tool(
+                    tool=tool,
+                    system_prompt_builder=agent_builder.get_system_prompt,
+                    # Provide `capability` as a default arg so the current loop value is 'captured'
+                    enabled=lambda cap=capability: cap.enabled,
+                )
+            )
+
+    return tools
 
 
 def wrap_tool_func_for_pydantic(
@@ -86,7 +120,7 @@ def to_pydanticai_tool(
 
 def map_json_type_to_python(prop_schema: ParameterSpec) -> Type[Any] | Any:
     """Maps a JSON Schema property definition to a Python type hint."""
-    json_type = prop_schema.get("type")
+    json_type: JSONType | list[JSONType] = prop_schema.get("type")
 
     if isinstance(json_type, list):
         # Handle union types (like ["string", "null"])

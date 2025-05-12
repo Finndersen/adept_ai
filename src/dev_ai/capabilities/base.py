@@ -36,10 +36,10 @@ class Capability(ABC):
         """
         return []
 
-    def enable(self) -> None:
+    async def enable(self) -> None:
         self.enabled = True
 
-    def disable(self) -> None:
+    async def disable(self) -> None:
         self.enabled = False
 
     async def get_context_data(self) -> str:

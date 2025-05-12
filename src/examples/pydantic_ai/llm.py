@@ -7,7 +7,7 @@ from typing import cast
 import logfire
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.messages import ModelMessage, ModelResponse
-from pydantic_ai.models import KnownModelName, Model, ModelRequestParameters
+from pydantic_ai.models import Model, ModelRequestParameters
 from pydantic_ai.models.gemini import GeminiModel, GeminiModelName
 from pydantic_ai.settings import ModelSettings
 from pydantic_ai.usage import Usage
@@ -44,7 +44,7 @@ class GeminiModelWithRetry(GeminiModel):
                 raise
 
 
-def build_model_from_name_and_api_key(model_name: KnownModelName | None, api_key: str | None = None) -> Model:
+def build_model_from_name_and_api_key(model_name: str | None, api_key: str | None = None) -> Model:
     """
     Build a model from a model name and API key.
     If no model name is provided, will try to infer from environment variables.

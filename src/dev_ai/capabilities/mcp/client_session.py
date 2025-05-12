@@ -9,6 +9,7 @@ class CustomClientSession(ClientSession):
     """
     Custom MCP ClientSession class which allows handling of more notification types:
     - ResourceListChangedNotification
+    - ToolListChangedNotification
 
     """
 
@@ -30,8 +31,10 @@ class CustomClientSession(ClientSession):
             case types.LoggingMessageNotification(params=params):
                 await self._logging_callback(params)
             case types.ResourceListChangedNotification(params=params):
-                await self._resource_list_changed_callback()
+                if self._resource_list_changed_callback:
+                    await self._resource_list_changed_callback()
             case types.ToolListChangedNotification(params=params):
-                await self._tool_list_changed_callback()
+                if self._tool_list_changed_callback:
+                    await self._tool_list_changed_callback()
             case _:
                 pass

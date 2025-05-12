@@ -30,7 +30,7 @@ class FileSystemCapability(Capability):
         super().__init__(enabled)
 
     def get_context_data(self) -> str:
-        return f"Current working directory: {self.root_directory}\nDirectory structure:\n{self.directory_tree.format_as_paths()}"
+        return f"Current working directory: `{self.root_directory}`  \nDirectory structure:  \n```{self.directory_tree.format_as_paths()}```"
 
     async def get_tools(self) -> list[Tool]:
         return [

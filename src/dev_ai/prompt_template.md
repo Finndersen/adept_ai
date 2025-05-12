@@ -9,6 +9,8 @@
 * Don't assume what type of project the user is working on if it is not evident from the request. Use the available tools or ask to find out if required.
 * Think about your approach and plan a series of steps required to solve the users request before using appropriate tools and formulating your response.
 * Only respond to the user (i.e. not use a tool call) when you have completed the request and have an answer, or cannot continue without more input from the user. 
+* Always perform multiple tool calls at the same time (in parallel) where possible for efficiency, for example enabling all potentially required capabilities in a single request, or retrieving multiple sources of data at the same time. 
+
 
 {%- for capability in enabled_capabilities -%}
 {%- with prompt_instructions = capability.prompt_instructions %}

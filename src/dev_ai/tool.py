@@ -1,3 +1,4 @@
+import logging
 import inspect
 from functools import partial
 from typing import Awaitable, Callable, Literal, TypedDict, cast
@@ -8,9 +9,13 @@ from pydantic_ai.tools import Tool as PydanticTool
 
 ToolFunction = Callable[..., Awaitable[str]] | Callable[..., str]
 
+JSONType = Literal["string", "number", "integer", "boolean", "array", "object"]
+
+logger = logging.getLogger(__name__)
+
 
 class RequiredParams(TypedDict):
-    type: Literal["string", "number", "integer", "boolean", "array", "object"]
+    type: JSONType
 
 
 class OptionalParams(TypedDict, total=False):
@@ -79,19 +84,18 @@ class Tool(BaseModel):
         :param kwargs:
         :return:
         """
-        print(f"[bold blue]Running tool: {self.name} with args: {kwargs}[/bold blue]")
+        logger.debug(f"Running tool: {self.name} with args: {kwargs}")
         try:
             if inspect.iscoroutinefunction(self.function):
                 result = await self.function(**kwargs)
             else:
                 wrapped_func = partial(cast(Callable[..., str], self.function), **kwargs)
-                return await run_sync(wrapped_func)
+                result = await run_sync(wrapped_func)
 
-            return result
         except ToolError as e:
-            error_msg = f"Error: {str(e)}"
-            print(f"[red]{error_msg}[/red]")
-            return error_msg
+            result = f"Error: {str(e)}"
+
+        return result
 
 
 class ToolError(Exception):

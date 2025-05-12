@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-
+import logging
 import argparse
 import asyncio
 from pathlib import Path
 
 import logfire
 from dotenv import load_dotenv
+from rich.logging import RichHandler
 
 
 def main():
@@ -50,6 +51,9 @@ def main():
     args = parser.parse_args()
 
     logfire.configure(send_to_logfire="if-token-present", console=None if args.debug else False)
+    logger = logging.getLogger("dev_ai")
+    logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
+    logger.handlers = [RichHandler(rich_tracebacks=True, tracebacks_show_locals=True)]
 
     # Run the assistant
     from examples.langchain.run import run_langchain

@@ -1,7 +1,8 @@
 import os
+from typing import cast
 
 from openai import AsyncOpenAI
-from openai.types.responses import EasyInputMessageParam
+from openai.types.responses import EasyInputMessageParam, ResponseFunctionToolCallParam
 from openai.types.responses.response_input_param import ResponseInputParam
 
 from dev_ai.compat.openai import OpenAITools
@@ -41,7 +42,7 @@ async def run_openai(prompt: str, model_name: str | None, api_key: str | None = 
                 # Call the tool
                 result = await openai_tools.handle_function_call_output(output)
                 # Add the tool response to the message history
-                message_history.append(output)
+                message_history.append(cast(ResponseFunctionToolCallParam, output))
                 message_history.append(result)
             else:
                 print(f"AI Agent: {response.output_text}")
@@ -71,5 +72,7 @@ def get_openai_client_and_model(api_key: str | None = None, model_name: str | No
             raise ValueError(
                 "OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass api_key parameter."
             )
+    elif not model_name:
+        raise ValueError("Must provide model name if API key is provided.")
 
     return AsyncOpenAI(api_key=api_key, base_url=api_url), model_name
