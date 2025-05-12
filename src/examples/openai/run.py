@@ -20,21 +20,20 @@ async def run_openai(prompt: str, model_name: str | None, api_key: str | None = 
     """
     client, model_name = get_openai_client_and_model(api_key, model_name)
 
-    async with get_agent_builder() as builder:
+    async with get_agent_builder() as agent_builder:
         message_history: ResponseInputParam = [EasyInputMessageParam(role="user", content=prompt)]
         # Agent tool calling loop
         while True:
             # Retrieve tools within loop so they can be dynamically updated
-            tools = await builder.get_tools()
-            # Convert tools to OpenAI tool format
+            tools = await agent_builder.get_tools()
+            # Helper class for translating to OpenAI tool format, and handling tool calling
             openai_tools = OpenAITools(tools)
 
             response = await client.responses.create(
                 model=model_name,
-                input=[EasyInputMessageParam(role="system", content=await builder.get_system_prompt())]
+                input=[EasyInputMessageParam(role="system", content=await agent_builder.get_system_prompt())]
                 + message_history,
-                tools=openai_tools.get_tool_params(),
-                tool_choice="auto",
+                tools=openai_tools.get_tool_params()
             )
 
             output = response.output[0]

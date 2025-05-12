@@ -13,8 +13,8 @@ def get_agent_builder() -> AgentBuilder:
         capabilities=[
             FileSystemCapability(),
             StdioMCPCapability(
-                "github_integration",
-                "Manage GitHub repositories, enabling file operations, search functionality, and integration with the GitHub API for seamless collaborative software development.",
+                name="github_integration",
+                description="Manage GitHub repositories, enabling file operations, search functionality, and integration with the GitHub API for seamless collaborative software development.",
                 command="npx",
                 args=["-y", "@modelcontextprotocol/server-github"],
                 env={"GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv("GITHUB_ACCESS_TOKEN", "")},
