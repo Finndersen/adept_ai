@@ -84,7 +84,8 @@ async def run_openai(prompt: str, model_name: str, api_key: str):
 [See code here.](src/examples/openai/run.py)
 
 ### Using with LangChain/LangGraph
-
+The prebuilt `create_react_agent()` does not support dynamic updating of tools within a run, so `interrupt_after` is used to achieve this. 
+It would be possible to create a custom graph-based agent that supports this more natively. 
 ```py
 from langchain_core.messages import HumanMessage, ToolMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -122,6 +123,7 @@ async def run_langchain(prompt: str, model_name: str, api_key: str):
 [See code here.](src/examples/langchain/run.py)
 
 ### Using with PydanticAI
+The `get_pydantic_ai_tools()` helper function uses PydanticAI's [dynamic function tools](https://ai.pydantic.dev/tools/#tool-prepare) feature, however requires all tool definitions to be built up-front, meaning MCP servers & sessions for all MCP capabilities will need to be initialised even if they are not enabled.  
 ```py
 from pydantic_ai import Agent
 
@@ -156,7 +158,7 @@ async def run_pydantic_ai(prompt: str, model_name: str | None, api_key: str | No
 - Customizable [system prompt template](src/dev_ai/prompt_template.md)
 - Helpful utilities for compatibility with LangGraph & PydanticAI frameworks and OpenAI SDK
 - Auto-create tools from existing sync or async functions/methods.
-- 
+- Built-in Filesystem capability with dynamically updating directory tree context data
 
 
 ### MCP Capabilities
