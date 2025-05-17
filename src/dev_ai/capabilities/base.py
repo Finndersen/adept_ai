@@ -23,14 +23,14 @@ class Capability(ABC):
         raise NotImplementedError
 
     @property
-    def prompt_instructions(self) -> list[str] | None:
+    def instructions(self) -> list[str] | None:
         """
         Returns the list instructions for the capability, to be added to the system prompt
         """
         return None
 
     @property
-    def prompt_examples(self) -> list[str]:
+    def usage_examples(self) -> list[str]:
         """
         Returns a list of usage examples for the capability, to be added to the system prompt
         """

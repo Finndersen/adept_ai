@@ -16,13 +16,15 @@ class TestOpenAITools:
         async def add_numbers(a: int, b: int = 5) -> str:
             return str(a + b)
 
-        add_tool = Tool.from_function(add_numbers, name="add", description="Add two numbers together")
+        add_tool = Tool.from_function(
+            add_numbers, name_prefix="Test", name="add", description="Add two numbers together"
+        )
 
         # Create another tool
         async def echo(message: str) -> str:
             return f"Echo: {message}"
 
-        echo_tool = Tool.from_function(echo, name="echo", description="Echo a message back")
+        echo_tool = Tool.from_function(echo, name_prefix="Test", name="echo", description="Echo a message back")
 
         return [add_tool, echo_tool]
 
@@ -39,7 +41,7 @@ class TestOpenAITools:
         # Check tool params match expected data structure
         expected_params = [
             {
-                "name": "add",
+                "name": "Test-add",
                 "type": "function",
                 "description": "Add two numbers together",
                 "parameters": {
@@ -50,7 +52,7 @@ class TestOpenAITools:
                 },
             },
             {
-                "name": "echo",
+                "name": "Test-echo",
                 "type": "function",
                 "description": "Echo a message back",
                 "parameters": {
@@ -68,7 +70,7 @@ class TestOpenAITools:
     async def test_call_tool(self, openai_tools, sample_tools):
         """Test calling a tool."""
         # Call the tool
-        result = await openai_tools.call_tool("add", a=5, b=3)
+        result = await openai_tools.call_tool("Test-add", a=5, b=3)
 
         # Verify the result
         assert result == "8"
@@ -78,7 +80,7 @@ class TestOpenAITools:
         """Test handling a function call output from OpenAI."""
         # Handle the function call output
         function_tool_call = ResponseFunctionToolCall(
-            call_id="call_123", type="function_call", name="add", arguments=json.dumps({"a": 5, "b": 3})
+            call_id="call_123", type="function_call", name="Test-add", arguments=json.dumps({"a": 5, "b": 3})
         )
         result = await openai_tools.handle_function_call_output(function_tool_call)
 

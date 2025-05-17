@@ -44,7 +44,7 @@ class TestWrapToolFuncForPydantic:
             return f"Result: {param1}, {param2}"
 
         # Create a tool from the function
-        tool = Tool.from_function(sample_function)
+        tool = Tool.from_function(sample_function, name_prefix="Test")
 
         # Wrap the tool function
         wrapped_func = wrap_tool_func_for_pydantic(tool, system_prompt_builder)
@@ -70,7 +70,7 @@ class TestWrapToolFuncForPydantic:
             return f"Result with ctx: {param1} (ctx: {id(ctx)})"
 
         # Create a tool from the function
-        tool = Tool.from_function(sample_function_with_ctx)
+        tool = Tool.from_function(sample_function_with_ctx, name_prefix="Test")
 
         # Wrap the tool function
         wrapped_func = wrap_tool_func_for_pydantic(tool, system_prompt_builder)
@@ -95,8 +95,8 @@ class TestWrapToolFuncForPydantic:
             return f"Result: {param1}"
 
         # Create two identical tools, one with updates_system_prompt=True and one with False
-        tool_with_update = Tool.from_function(sample_function, updates_system_prompt=True)
-        tool_without_update = Tool.from_function(sample_function, updates_system_prompt=False)
+        tool_with_update = Tool.from_function(sample_function, name_prefix="Test", updates_context_data=True)
+        tool_without_update = Tool.from_function(sample_function, name_prefix="Test", updates_context_data=False)
 
         # Set up the mock context with initial content
         initial_content = "Initial system prompt"
@@ -140,7 +140,7 @@ class TestWrapToolFuncForPydantic:
             raise ToolError("Test error message")
 
         # Create a tool from the function
-        tool = Tool.from_function(failing_function)
+        tool = Tool.from_function(failing_function, name_prefix="Test")
 
         # Wrap the tool function
         wrapped_func = wrap_tool_func_for_pydantic(tool, system_prompt_builder)
@@ -168,13 +168,12 @@ class TestWrapToolFuncForPydantic:
         )
 
         # Create a mock MCP session with call_tool() method
-        mock_mcp_session = MagicMock(spec=ClientSession)
         tool_result = MagicMock(content=[MagicMock(text="MCP tool result")], isError=False)
-        mock_mcp_session.call_tool = AsyncMock(return_value=tool_result)
+        mock_mcp_session = MagicMock(spec=ClientSession, call_tool=AsyncMock(return_value=tool_result))
 
         # Create a Tool instance from the MCPTool definition
-        mcp_capability = MCPCapability(name="test", description="test")
-        mcp_capability._mcp_session = mock_mcp_session
+        mcp_capability = MCPCapability(name="test", description="test", mcp_client=None)
+        mcp_capability._mcp_lifecycle_manager = MagicMock(mcp_session=mock_mcp_session, active=True)
         tool = mcp_capability.mcptool_to_tool(mcp_tool)
 
         # Wrap the tool function
@@ -207,16 +206,12 @@ class TestWrapToolFuncForPydantic:
         mcp_tool.inputSchema = {"type": "object", "properties": {"param1": {"type": "string"}}, "required": ["param1"]}
 
         # Create a mock MCP session with call_tool() method that returns error result
-        mock_mcp_session = MagicMock(spec=ClientSession)
-        tool_result = MagicMock()
-        tool_result.content = [MagicMock()]
-        tool_result.content[0].text = "Something went wrong"
-        tool_result.isError = True
-        mock_mcp_session.call_tool = AsyncMock(return_value=tool_result)
+        tool_result = MagicMock(content=[MagicMock(text="Something went wrong")], isError=True)
+        mock_mcp_session = MagicMock(spec=ClientSession, call_tool=AsyncMock(return_value=tool_result))
 
         # Create a Tool instance from the MCPTool definition
-        mcp_capability = MCPCapability(name="test", description="test")
-        mcp_capability._mcp_session = mock_mcp_session
+        mcp_capability = MCPCapability(name="test", description="test", mcp_client=None)
+        mcp_capability._mcp_lifecycle_manager = MagicMock(mcp_session=mock_mcp_session, active=True)
         tool = mcp_capability.mcptool_to_tool(mcp_tool)
 
         # Wrap the tool function

@@ -30,16 +30,27 @@ agent_builder = AgentBuilder(
     role=ROLE,
     capabilities=[
         FileSystemCapability(),
+        # Register here to get API key: https://developer.accuweather.com/
         StdioMCPCapability(
-            name="github_integration",
-            description="Manage GitHub repositories, enabling file operations, search functionality, and integration with the GitHub API for seamless collaborative software development.",
+            name="AccuWeather",
+            description="Get weather data from AccuWeather, a weather forecasting and weather information service.",
             command="npx",
-            args=["-y", "@modelcontextprotocol/server-github"],
-            env={"GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv("GITHUB_ACCESS_TOKEN", "")},
-            tools=["search_repositories", "read_file", "search_code"],
+            args=["-y",  "@timlukahorstmann/mcp-weather"],
+            env={"ACCUWEATHER_API_KEY": os.getenv("ACCUWEATHER_API_KEY", "")},
+            instructions=["Use a sessionId of '123' when calling tools that require one."]
+        ),
+        # Check here for setup instructions: https://github.com/GongRzhe/Gmail-MCP-Server
+        StdioMCPCapability(
+            name="Gmail",
+            description="Access my Gmail account to read and send emails.",
+            command="npx",
+            args=["@gongrzhe/server-gmail-autoauth-mcp"],
+            tools=["search_emails", "read_email", "send_email", "delete_email", "batch_delete_emails"],
+            instructions=["Use `older_than:` or `newer_than:` instead of `after:` and `before:` for relative time queries"],
         ),
     ],
 )
+# The capabilities are disabled by default so initially the only tool will be `enable_capabilities()`
 tools = await agent_builder.get_tools()
 system_prompt = await agent_builder.get_system_prompt()
 ```
@@ -71,16 +82,16 @@ async def run_openai(prompt: str, model_name: str, api_key: str):
                 tools=openai_tools.get_tool_params(),
             )
 
-            output = response.output[0]
-            if output.type == "function_call":
-                # Call the tool
-                result = await openai_tools.handle_function_call_output(output)
-                # Add the tool response to the message history
-                message_history.append(output)
-                message_history.append(result)
-            else:
-                print(f"AI Agent: {response.output_text}")
-                break
+            for output in response.output:
+                if output.type == "function_call":
+                    # Call the tool
+                    result = await openai_tools.handle_function_call_output(output)
+                    # Add the tool response to the message history
+                    message_history.append(output)
+                    message_history.append(result)
+                else:
+                    print(f"AI Agent: {response.output_text}")
+                    break
 ```
 [See code here.](src/examples/openai/run.py)
 
@@ -89,15 +100,15 @@ The prebuilt `create_react_agent()` does not support dynamic updating of tools w
 It would be possible to create a custom graph-based agent that supports this more natively. 
 ```py
 from langchain_core.messages import HumanMessage, ToolMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import create_react_agent
 
 from dev_ai.compat.langchain import tool_to_langchain_tool
 from examples.agent_builder import get_agent_builder
+from examples.langchain.models import get_model_from_name_and_api_key
 
 
 async def run_langchain(prompt: str, model_name: str, api_key: str):
-    model = ChatGoogleGenerativeAI(model=model_name, google_api_key=api_key)
+    model = get_model_from_name_and_api_key(model_name=model_name, api_key=api_key)
 
     async with get_agent_builder() as builder:
         messages = [HumanMessage(content=prompt)]
@@ -127,13 +138,14 @@ async def run_langchain(prompt: str, model_name: str, api_key: str):
 The `get_pydantic_ai_tools()` helper function uses PydanticAI's [dynamic function tools](https://ai.pydantic.dev/tools/#tool-prepare) feature, 
 however requires all tool definitions to be built up-front, meaning MCP servers & sessions for all MCP capabilities will need to be initialised even if they are not enabled.  
 A custom wrapper is also added to the tools which causes the system prompt to be dynamically updated within an agent run.
+
 ```py
 from pydantic_ai import Agent
 
 from dev_ai.compat.pydantic_ai import get_pydantic_ai_tools
 from examples.agent_builder import get_agent_builder
 
-from .llm import build_model_from_name_and_api_key
+from examples.pydantic_ai.models import build_model_from_name_and_api_key
 
 
 async def run_pydantic_ai(prompt: str, model_name: str | None, api_key: str | None = None):
@@ -157,10 +169,11 @@ async def run_pydantic_ai(prompt: str, model_name: str | None, api_key: str | No
 ## Features
 
 ### General
+- Can be used for both one-shot agents or longer running conversational style ones with state
 - Fully async and typed
 - Customizable [system prompt template](src/dev_ai/prompt_template.md)
 - Helpful utilities for compatibility with LangGraph & PydanticAI frameworks and OpenAI SDK
-- Auto-create tools from existing sync or async functions/methods.
+- Auto-create tools from existing sync or async functions/methods
 - Built-in Filesystem capability with dynamically updating directory tree context data
 
 

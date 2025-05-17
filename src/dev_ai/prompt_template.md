@@ -11,9 +11,8 @@
 * Only respond to the user (i.e. not use a tool call) when you have completed the request and have an answer, or cannot continue without more input from the user. 
 * Always perform multiple tool calls at the same time (in parallel) where possible for efficiency, for example enabling all potentially required capabilities in a single request, or retrieving multiple sources of data at the same time. 
 
-
-{%- for capability in enabled_capabilities -%}
-{%- with prompt_instructions = capability.prompt_instructions %}
+{% for capability in enabled_capabilities %}
+{%- with prompt_instructions = capability.instructions %}
 {%- if prompt_instructions %}
 ## {{ capability.name }}
 {%- for instruction in prompt_instructions %}
@@ -24,7 +23,7 @@
 {%- endfor %}
 
 # CAPABILITIES
-These are the capabilities you have available to perform tasks. You can enable and disable capabilities as needed to retrieve information and complete user requests. 
+These are the capabilities you have available to perform tasks. You can enable capabilities as needed to retrieve information and perform actions to complete user requests. 
 
 ## Enabled
 {%- if enabled_capabilities %}
@@ -44,13 +43,16 @@ No capabilities enabled
 
 # EXAMPLE BEHAVIOUR
 {%- for capability in enabled_capabilities %}
-{%- for behaviour_example in capability.prompt_examples %}
+{%- for behaviour_example in capability.usage_examples %}
 {{ behaviour_example }}
 -------
 {%- endfor %}
 {%- endfor %}
 
 # CONTEXTUAL INFORMATION
+## General
+Current local date & time: {{ local_time.strftime('%Y-%m-%d %H:%M:%S') }}
+
 {%- for capability in enabled_capabilities %}
 {%- with context_data = capability.get_context_data() %}
 {%- if context_data %}

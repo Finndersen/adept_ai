@@ -62,7 +62,7 @@ def wrap_tool_func_for_pydantic(
 
         result = await tool.call(**kwargs)
 
-        if tool.updates_system_prompt:
+        if tool.updates_context_data:
             system_prompt_part = ctx.messages[0].parts[0]
             assert isinstance(system_prompt_part, SystemPromptPart)
             system_prompt_part.content = await system_prompt_builder()

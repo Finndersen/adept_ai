@@ -15,7 +15,7 @@ class FileSystemCapability(Capability):
     Root directory defaults to the current working directory.
     """
 
-    name = "file_system"
+    name = "Filesystem"
     description = "View the local working directory structure and read & write content of files from the file system. Does not support editing existing files."
 
     def __init__(
@@ -34,9 +34,9 @@ class FileSystemCapability(Capability):
 
     async def get_tools(self) -> list[Tool]:
         return [
-            Tool.from_function(self.create_file),
-            Tool.from_function(self.read_file, updates_system_prompt=True),
-            Tool.from_function(self.expand_directory, updates_system_prompt=True),
+            Tool.from_function(self.create_file, name_prefix=self.name),
+            Tool.from_function(self.read_file, name_prefix=self.name),
+            Tool.from_function(self.expand_directory, name_prefix=self.name, updates_context_data=True),
         ]
 
     async def create_file(

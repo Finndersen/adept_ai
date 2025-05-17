@@ -2,9 +2,9 @@ import logging
 from contextlib import _AsyncGeneratorContextManager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Container, Self
+from typing import Any, Callable, Container, Self, cast
 
-from mcp import ClientSession, StdioServerParameters, stdio_client
+from mcp import ClientSession, McpError, StdioServerParameters, stdio_client
 from mcp import Resource as MCPResourceMetadata
 from mcp import Tool as MCPTool
 from mcp.client.session import LoggingFnT, SamplingFnT
@@ -13,10 +13,12 @@ from mcp.types import TextResourceContents
 from pydantic import AnyUrl
 
 from dev_ai.capabilities import Capability
-from dev_ai.tool import Tool
+from dev_ai.tool import Tool, ToolInputSchema
 from dev_ai.utils import cached_method
 
 from .lifecycle_manager import MCPLifecycleManager, UninitialisedMCPSessionError
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -61,6 +63,7 @@ class MCPCapability(Capability):
         tools: Container[str] | None = None,
         resources: ResourceURIChecker | bool = False,
         instructions: list[str] | None = None,
+        usage_examples: list[str] | None = None,
         sampling_callback: SamplingFnT | None = None,
         logging_callback: LoggingFnT | None = None,
         **kwargs,
@@ -82,6 +85,7 @@ class MCPCapability(Capability):
         self._allowed_tools = tools
         self._include_resources = resources
         self._instructions = instructions or []
+        self._usage_examples = usage_examples or []
         self._context_active = False  # Whether parent AgentBuilder or this capability's context manager is active
         self._mcp_lifecycle_manager = MCPLifecycleManager(
             mcp_client,
@@ -93,12 +97,16 @@ class MCPCapability(Capability):
         super().__init__(**kwargs)
 
     @property
-    def prompt_instructions(self) -> list[str] | None:
+    def instructions(self) -> list[str] | None:
         return self._instructions
+
+    @property
+    def usage_examples(self) -> list[str] | None:
+        return self._usage_examples
 
     ## MCP Client & Session management ##
     async def init_mcp_session(self) -> None:
-        logging.debug(f"Starting MCP server: {self.name}")
+        logger.debug(f"Starting MCP server: {self.name}")
         await self._mcp_lifecycle_manager.setup()
 
     async def _close_mcp_session(self) -> None:
@@ -137,10 +145,13 @@ class MCPCapability(Capability):
             await self.init_mcp_session()
 
     ## TOOLS ##
+    @cached_method
     async def get_tools(self) -> list[Tool]:
         return [self.mcptool_to_tool(tool) for tool in await self._get_allowed_mcp_tools()]
 
     def mcptool_to_tool(self, mcp_tool: MCPTool) -> Tool:
+        logger.debug(f"Creating tool from MCP tool: {mcp_tool}")
+
         async def call_mcp_tool(**kwargs: Any):
             tool_result = await self.mcp_session.call_tool(mcp_tool.name, arguments=kwargs)
             # Only support TextContent for now
@@ -150,11 +161,12 @@ class MCPCapability(Capability):
             return content
 
         return Tool(
-            name=mcp_tool.name,
+            name=f"{self.name}-{mcp_tool.name}",
             description=mcp_tool.description or "",
-            input_schema=mcp_tool.inputSchema,
+            # "required" param may not be provided if tool has no args/properties
+            input_schema=cast(ToolInputSchema, {"required": [], **mcp_tool.inputSchema}),
             function=call_mcp_tool,
-            updates_system_prompt=False,  # TODO: Allow specifying which tools can update resources?
+            updates_context_data=False,  # TODO: Allow specifying which tools can update resources?
         )
 
     async def get_context_data(self) -> str:
@@ -167,7 +179,6 @@ class MCPCapability(Capability):
         else:
             return ""
 
-    @cached_method
     async def _get_allowed_mcp_tools(self) -> list[MCPTool]:
         tools_result = await self.mcp_session.list_tools()
         return [
@@ -176,7 +187,7 @@ class MCPCapability(Capability):
 
     async def _handle_tool_list_changed(self) -> None:
         # Reset the tool list cache when the server notifies that it has changed
-        self._get_allowed_mcp_tools.clear_cache()
+        self.get_tools.clear_cache()
 
     ## RESOURCES ##
     async def _get_included_resources(self) -> list[MCPResource]:
@@ -200,8 +211,14 @@ class MCPCapability(Capability):
 
     @cached_method
     async def list_all_resources(self) -> list[MCPResourceMetadata]:
-        resources_result = await self.mcp_session.list_resources()
-        return resources_result.resources
+        try:
+            resources_result = await self.mcp_session.list_resources()
+            return resources_result.resources
+        except McpError as e:
+            if str(e) == "Method not found":
+                return []
+            else:
+                raise
 
     async def read_resource(self, resource_uri: AnyUrl) -> list[str]:
         """

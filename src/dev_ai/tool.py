@@ -1,10 +1,10 @@
-import logging
 import inspect
+import logging
 from functools import partial
 from typing import Awaitable, Callable, Literal, TypedDict, cast
 
 from anyio.to_thread import run_sync
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_ai.tools import Tool as PydanticTool
 
 ToolFunction = Callable[..., Awaitable[str]] | Callable[..., str]
@@ -48,19 +48,20 @@ class Tool(BaseModel):
     Data structure to represent a tool that can be used by an agent.
     """
 
-    name: str
+    name: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     description: str
     input_schema: ToolInputSchema
     function: ToolFunction
-    updates_system_prompt: bool = False
+    updates_context_data: bool = False
 
     @classmethod
     def from_function(
         cls,
         function: ToolFunction,
+        name_prefix: str,
         name: str | None = None,
         description: str | None = None,
-        updates_system_prompt: bool = False,
+        updates_context_data: bool = False,
     ) -> "Tool":
         """
         Creates a Tool instance from a function, automatically constructing the input schema
@@ -69,11 +70,11 @@ class Tool(BaseModel):
         pydantic_ai_tool = PydanticTool(function=function, name=name, description=description)
 
         return cls(
-            name=pydantic_ai_tool.name,
+            name=f"{name_prefix}-{pydantic_ai_tool.name}",
             description=pydantic_ai_tool.description,
             input_schema=cast(ToolInputSchema, pydantic_ai_tool._base_parameters_json_schema),
             function=function,
-            updates_system_prompt=updates_system_prompt,
+            updates_context_data=updates_context_data,
         )
 
     async def call(self, **kwargs) -> str:
@@ -84,7 +85,7 @@ class Tool(BaseModel):
         :param kwargs:
         :return:
         """
-        logger.debug(f"Running tool: {self.name} with args: {kwargs}")
+        logger.info(f"Running tool: '{self.name}' with args: {kwargs}")
         try:
             if inspect.iscoroutinefunction(self.function):
                 result = await self.function(**kwargs)

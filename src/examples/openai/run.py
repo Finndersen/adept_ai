@@ -9,7 +9,7 @@ from dev_ai.compat.openai import OpenAITools
 from examples.agent_builder import get_agent_builder
 
 
-async def run_openai(prompt: str, model_name: str | None, api_key: str | None = None):
+async def run_openai(prompt: str, model_name: str | None, api_key: str | None = None) -> str:
     """
     Run an OpenAI model directly using the OpenAI SDK.
 
@@ -33,19 +33,18 @@ async def run_openai(prompt: str, model_name: str | None, api_key: str | None = 
                 model=model_name,
                 input=[EasyInputMessageParam(role="system", content=await agent_builder.get_system_prompt())]
                 + message_history,
-                tools=openai_tools.get_tool_params()
+                tools=openai_tools.get_tool_params(),
             )
 
-            output = response.output[0]
-            if output.type == "function_call":
-                # Call the tool
-                result = await openai_tools.handle_function_call_output(output)
-                # Add the tool response to the message history
-                message_history.append(cast(ResponseFunctionToolCallParam, output))
-                message_history.append(result)
-            else:
-                print(f"AI Agent: {response.output_text}")
-                break
+            for output in response.output:
+                if output.type == "function_call":
+                    # Call the tool
+                    result = await openai_tools.handle_function_call_output(output)
+                    # Add the tool response to the message history
+                    message_history.append(cast(ResponseFunctionToolCallParam, output.model_dump()))
+                    message_history.append(result)
+                else:
+                    return response.output_text
 
 
 def get_openai_client_and_model(api_key: str | None = None, model_name: str | None = None) -> tuple[AsyncOpenAI, str]:

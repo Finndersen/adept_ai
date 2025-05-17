@@ -1,4 +1,6 @@
 import asyncio
+import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Self
 
@@ -8,6 +10,8 @@ from dev_ai.capabilities import Capability
 from dev_ai.tool import ParameterSpec, Tool, ToolError
 
 DEFAULT_PROMPT_TEMPLATE = Path(__file__).resolve().parent / "prompt_template.md"
+
+logger = logging.getLogger(__name__)
 
 
 class AgentBuilder:
@@ -52,7 +56,7 @@ class AgentBuilder:
                 "required": ["name"],
             },
             function=self.enable_capability,
-            updates_system_prompt=True,
+            updates_context_data=True,
         )
 
     async def enable_capability(self, name: str) -> str:
@@ -86,6 +90,7 @@ class AgentBuilder:
             role=self._role,
             enabled_capabilities=self.enabled_capabilities,
             disabled_capabilities=self.disabled_capabilities,
+            local_time=datetime.now(),
         )
         return prompt
 
@@ -102,7 +107,7 @@ class AgentBuilder:
             *(capability.get_tools() for capability in self.enabled_capabilities)
         ):
             tools.extend(capability_tools)
-
+        logger.debug(f"Agent tools: \n{'\n'.join(str(tool) for tool in tools)}")
         return tools
 
     @property
@@ -120,12 +125,8 @@ class AgentBuilder:
         return [c for c in self._capabilities if not c.enabled]
 
     async def __aenter__(self) -> Self:
-        # TODO: Could potentially setup capabilities in parallel, but this causes error:
-        # RuntimeError: Attempted to exit cancel scope in a different task than it was entered in
-        for c in self._capabilities:
-            await c.setup()
+        await asyncio.gather(*(c.setup() for c in self._capabilities))
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        for c in self._capabilities:
-            await c.teardown()
+        await asyncio.gather(*(c.teardown() for c in self._capabilities))

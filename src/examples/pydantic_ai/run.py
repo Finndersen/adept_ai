@@ -3,7 +3,7 @@ from pydantic_ai import Agent
 from dev_ai.compat.pydantic_ai import get_pydantic_ai_tools
 from examples.agent_builder import get_agent_builder
 
-from .llm import build_model_from_name_and_api_key
+from examples.pydantic_ai.models import build_model_from_name_and_api_key
 
 
 async def run_pydantic_ai(prompt: str, model_name: str | None, api_key: str | None = None):
@@ -20,4 +20,4 @@ async def run_pydantic_ai(prompt: str, model_name: str | None, api_key: str | No
 
         response = await agent.run(prompt)
 
-        print(f"AI Agent: {response.output}")
+        return response.output

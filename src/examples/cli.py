@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-import logging
 import argparse
 import asyncio
+import logging
 from pathlib import Path
 
 import logfire
 from dotenv import load_dotenv
+from rich.console import Console
 from rich.logging import RichHandler
+from rich.markdown import Markdown
 
 
 def main():
@@ -50,10 +52,21 @@ def main():
 
     args = parser.parse_args()
 
-    logfire.configure(send_to_logfire="if-token-present", console=None if args.debug else False)
+    logfire.configure(send_to_logfire="if-token-present", console=None if args.debug else False, scrubbing=False)
+
+    # Configure the root logger to use only RichHandler
+    # This ensures all loggers inherit this configuration
+    root_logger = logging.getLogger()
+    # Remove all existing handlers
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+    # Add only the RichHandler
+    rich_handler = RichHandler(rich_tracebacks=True)
+    root_logger.addHandler(rich_handler)
+
+    # Get the dev_ai logger (will inherit the root logger's handler)
     logger = logging.getLogger("dev_ai")
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
-    logger.handlers = [RichHandler(rich_tracebacks=True, tracebacks_show_locals=True)]
 
     # Run the assistant
     from examples.langchain.run import run_langchain
@@ -65,7 +78,18 @@ def main():
         "langchain": run_langchain,
         "openai": run_openai,
     }
-    asyncio.run(RUN_FUNCS[args.framework](prompt=args.prompt, model_name=args.model, api_key=args.api_key))
+    try:
+        agent_output = asyncio.run(
+            RUN_FUNCS[args.framework](prompt=args.prompt, model_name=args.model, api_key=args.api_key)
+        )
+    except Exception as e:
+        logger.exception(f"Error running assistant: {e}")
+        return 1
+
+    # Create console and markdown renderer
+    console = Console()
+    md = Markdown(agent_output, justify="left")
+    console.print(md)
 
     return 0
 
