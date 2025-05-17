@@ -2,7 +2,6 @@ from pydantic_ai import Agent
 
 from dev_ai.compat.pydantic_ai import get_pydantic_ai_tools
 from examples.agent_builder import get_agent_builder
-
 from examples.pydantic_ai.models import build_model_from_name_and_api_key
 
 

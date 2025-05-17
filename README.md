@@ -74,11 +74,11 @@ async def run_openai(prompt: str, model_name: str, api_key: str):
             # Retrieve tools within loop so they can be dynamically updated
             tools = await agent_builder.get_tools()
             openai_tools = OpenAITools(tools)
+            system_prompt = await agent_builder.get_system_prompt()
 
             response = await client.responses.create(
                 model=model_name,
-                input=[EasyInputMessageParam(role="system", content=await agent_builder.get_system_prompt())]
-                + message_history,
+                input=[EasyInputMessageParam(role="system", content=system_prompt)] + message_history,
                 tools=openai_tools.get_tool_params(),
             )
 
@@ -125,7 +125,7 @@ async def run_langchain(prompt: str, model_name: str, api_key: str):
 
             if isinstance(response["messages"][-1], ToolMessage):
                 messages = response["messages"]
-                # Continue agent tool calling loop
+                # Continue agent tool calling loop with refreshed system prompt and tools
                 continue
             else:
                 message = response["messages"][-1].content

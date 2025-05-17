@@ -28,11 +28,11 @@ async def run_openai(prompt: str, model_name: str | None, api_key: str | None = 
             tools = await agent_builder.get_tools()
             # Helper class for translating to OpenAI tool format, and handling tool calling
             openai_tools = OpenAITools(tools)
+            system_prompt = await agent_builder.get_system_prompt()
 
             response = await client.responses.create(
                 model=model_name,
-                input=[EasyInputMessageParam(role="system", content=await agent_builder.get_system_prompt())]
-                + message_history,
+                input=[EasyInputMessageParam(role="system", content=system_prompt)] + message_history,
                 tools=openai_tools.get_tool_params(),
             )
 

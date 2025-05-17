@@ -24,7 +24,7 @@ async def run_langchain(prompt: str, model_name: str | None, api_key: str | None
 
             if isinstance(response["messages"][-1], ToolMessage):
                 messages = response["messages"]
-                # Continue agent tool calling loop
+                # Continue agent tool calling loop with refreshed system prompt and tools
                 continue
             else:
                 message = response["messages"][-1].content
