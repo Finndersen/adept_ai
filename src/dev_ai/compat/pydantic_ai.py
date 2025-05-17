@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, Union, cast
 
@@ -8,7 +9,7 @@ from pydantic_ai.messages import SystemPromptPart
 from pydantic_ai.tools import ToolDefinition
 
 from dev_ai.agent_builder import AgentBuilder
-from dev_ai.capabilities.mcp.main import MCPCapability
+from dev_ai.capabilities import Capability
 from dev_ai.tool import JSONType, ParameterSpec, Tool, ToolInputSchema
 
 
@@ -26,10 +27,9 @@ async def get_pydantic_ai_tools(agent_builder: AgentBuilder) -> list[PydanticToo
             enabled=True,
         )
     ]
-    for capability in agent_builder.disabled_capabilities + agent_builder.enabled_capabilities:
-        # Need to initialise MCP session for MCP capabilities to get tools
-        if isinstance(capability, MCPCapability):
-            await capability.init_mcp_session()
+
+    async def _add_tools_for_capability(capability: Capability):
+        await capability.setup()
 
         for tool in await capability.get_tools():
             tools.append(
@@ -40,6 +40,13 @@ async def get_pydantic_ai_tools(agent_builder: AgentBuilder) -> list[PydanticToo
                     enabled=lambda cap=capability: cap.enabled,
                 )
             )
+
+    await asyncio.gather(
+        *(
+            _add_tools_for_capability(capability)
+            for capability in agent_builder.disabled_capabilities + agent_builder.enabled_capabilities
+        )
+    )
 
     return tools
 

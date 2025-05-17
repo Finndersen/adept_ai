@@ -2,7 +2,7 @@ import logging
 from contextlib import _AsyncGeneratorContextManager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Container, Self, cast
+from typing import Any, Callable, Container, cast
 
 from mcp import ClientSession, McpError, StdioServerParameters, stdio_client
 from mcp import Resource as MCPResourceMetadata
@@ -105,13 +105,6 @@ class MCPCapability(Capability):
         return self._usage_examples
 
     ## MCP Client & Session management ##
-    async def init_mcp_session(self) -> None:
-        logger.debug(f"Starting MCP server: {self.name}")
-        await self._mcp_lifecycle_manager.setup()
-
-    async def _close_mcp_session(self) -> None:
-        await self._mcp_lifecycle_manager.teardown()
-
     @property
     def mcp_session(self) -> ClientSession:
         if not self._mcp_lifecycle_manager.active:
@@ -121,28 +114,14 @@ class MCPCapability(Capability):
         return self._mcp_lifecycle_manager.mcp_session
 
     ## Lifecycle Management ##
-    async def __aenter__(self) -> Self:
-        await self.setup()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.teardown()
-
     async def setup(self) -> None:
-        # Start MCP client and session if capability is already enabled when AgentBuilder enters context manager
-        self._context_active = True
-        if self.enabled:
-            await self.init_mcp_session()
+        # Start MCP client and session
+        if not self._mcp_lifecycle_manager.active:
+            logger.debug(f"Starting MCP server: {self.name}")
+            await self._mcp_lifecycle_manager.setup()
 
     async def teardown(self) -> None:
-        self._context_active = False
-        await self._close_mcp_session()
-
-    async def enable(self) -> None:
-        await super().enable()
-        # Initialise MCP session if capability is enabled when AgentBuilder is in context manager
-        if self._context_active:
-            await self.init_mcp_session()
+        await self._mcp_lifecycle_manager.teardown()
 
     ## TOOLS ##
     @cached_method

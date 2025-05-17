@@ -125,7 +125,8 @@ class AgentBuilder:
         return [c for c in self._capabilities if not c.enabled]
 
     async def __aenter__(self) -> Self:
-        await asyncio.gather(*(c.setup() for c in self._capabilities))
+        # Setup enabled capabilities when entering context manager
+        await asyncio.gather(*(c.setup() for c in self.enabled_capabilities))
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):

@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import Self
 
 from dev_ai.tool import Tool
 
@@ -36,17 +37,18 @@ class Capability(ABC):
         """
         return []
 
-    async def enable(self) -> None:
-        self.enabled = True
-
-    async def disable(self) -> None:
-        self.enabled = False
-
     async def get_context_data(self) -> str:
         """
         Returns any relevant contextual data for the capability, to be added to the system prompt
         """
         return ""
+
+    async def enable(self) -> None:
+        self.enabled = True
+        await self.setup()
+
+    async def disable(self) -> None:
+        self.enabled = False
 
     async def setup(self) -> None:  # noqa: B027
         """
@@ -57,7 +59,15 @@ class Capability(ABC):
 
     async def teardown(self) -> None:  # noqa: B027
         """
-        Perform any necessary teardown or cleanup
+        Perform any necessary teardown or cleanup.
+        May be called when the capability was never enabled or setup() not called
         :return:
         """
         pass
+
+    async def __aenter__(self) -> Self:
+        await self.setup()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.teardown()
