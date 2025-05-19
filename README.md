@@ -1,13 +1,12 @@
 # Agent Builder
 
 Easily create self-evolving AI agents that can choose what capabilities they need to dynamically update their instructions, context data and tools. 
-Allows an agent to be configured with many capabilities but choose only the ones it needs to get its job done, allowing it to complete a broad range of tasks but not get overwhelmed by context and tool choice. 
+
+An agent is configured with many capabilities but chooses only the ones it needs to get its job done, allowing it to complete a broad range of tasks but not get overwhelmed by context and tool choice. 
 
 The two basic concepts involved are:
 - **Capability** - Consists of a collection of associated tools and context data, along with instructions and examples for how to use them. 
 - **AgentBuilder** - Translates a role and list of capabilities into an aggregated dynamically evolving [system prompt](src/dev_ai/prompt_template.md) and set of tools that can be used to define an AI agent's behaviour. 
-
-Capabilities can either be initially enabled, or enabled as required by the agent using a provided tool. 
 
 MCP-based capabilities enable super-simple and flexible integration of one or many MCP servers with your agent. All the complexity of MCP session lifecycle management, communication, tool calling, resource retrieval and server notification handling is taken care of automatically.  
 
@@ -171,7 +170,7 @@ async def run_pydantic_ai(prompt: str, model_name: str | None, api_key: str | No
 
 ### General
 - Can be used for both one-shot agents or longer running conversational style ones with state
-- Fully async and typed
+- Fully typed and async
 - Customizable [system prompt template](src/dev_ai/prompt_template.md)
 - Helpful utilities for compatibility with LangGraph & PydanticAI frameworks and OpenAI SDK
 - Auto-create tools from existing sync or async functions/methods
@@ -179,10 +178,8 @@ async def run_pydantic_ai(prompt: str, model_name: str | None, api_key: str | No
 
 
 ### MCP Capabilities
-- Add description, instructions and usage examples for how to use the MCP server
-- Choose which tools to include
-- Automatically include specified resources in system prompt context data
-- Add instructions or usage examples to help agent use MCP tools and improve reliability
+- Choose which tools and resources to provide to the agent
+- Add description, instructions and usage examples to help agent use MCP tools reliably
 - Advanced MCP session lifecycle management that allows MCP servers to be initialised on-demand only when they are enabled. 
 - Handle server sampling requests (so MCP server can make request to LLM/agent)
 - Automatic caching of tool and resource lists, with handling of server notifications to reset caches (not even officially supported by the MCP SDK yet)

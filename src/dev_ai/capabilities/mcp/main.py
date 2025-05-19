@@ -129,8 +129,6 @@ class MCPCapability(Capability):
         return [self.mcptool_to_tool(tool) for tool in await self._get_allowed_mcp_tools()]
 
     def mcptool_to_tool(self, mcp_tool: MCPTool) -> Tool:
-        logger.debug(f"Creating tool from MCP tool: {mcp_tool}")
-
         async def call_mcp_tool(**kwargs: Any):
             tool_result = await self.mcp_session.call_tool(mcp_tool.name, arguments=kwargs)
             # Only support TextContent for now
