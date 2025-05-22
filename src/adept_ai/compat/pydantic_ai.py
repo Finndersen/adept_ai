@@ -5,8 +5,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, Union, 
 from pydantic_ai import RunContext
 from pydantic_ai import Tool as PydanticTool
 from pydantic_ai._pydantic import takes_ctx
-from pydantic_ai.messages import SystemPromptPart
-from pydantic_ai.tools import ToolDefinition
+from pydantic_ai.tools import ToolDefinition, ToolsPrepareFunc
 
 from adept_ai.agent_builder import AgentBuilder
 from adept_ai.capabilities import Capability
@@ -17,13 +16,13 @@ async def get_pydantic_ai_tools(agent_builder: AgentBuilder) -> list[PydanticToo
     """
     Get the tools which can be used by a PydanticAI agent.
     Returns tools for all capabilities, but only enables the tool if the capability is enabled.
-    This is an unfortunate limitation that means that tools must be processed for all MCP capabilities even if they are not enabled.
+    This is an unfortunate limitation that means that tools must be processed for all MCP capabilities even if they are
+     not enabled, so all MCP servers must be initialised.
     """
 
     tools = [
         to_pydanticai_tool(
             tool=agent_builder.get_enable_capabilities_tool(),
-            system_prompt_builder=agent_builder.get_system_prompt,
             enabled=True,
         )
     ]
@@ -35,7 +34,6 @@ async def get_pydantic_ai_tools(agent_builder: AgentBuilder) -> list[PydanticToo
             tools.append(
                 to_pydanticai_tool(
                     tool=tool,
-                    system_prompt_builder=agent_builder.get_system_prompt,
                     # Provide `capability` as a default arg so the current loop value is 'captured'
                     enabled=lambda cap=capability: cap.enabled,
                 )
@@ -51,13 +49,36 @@ async def get_pydantic_ai_tools(agent_builder: AgentBuilder) -> list[PydanticToo
     return tools
 
 
+def to_pydanticai_tool(
+    tool: Tool, enabled: bool | Callable[[], bool] = True
+) -> PydanticTool:
+    # Tool preparation function to only enable the tool when its capability is enabled
+    async def enable_tool(ctx: RunContext, tool_def: ToolDefinition) -> ToolDefinition | None:
+        # Need to dynamically evaluate the enabler function each time
+        if callable(enabled):
+            _enabled = enabled()
+        else:
+            _enabled = enabled
+
+        if _enabled:
+            return tool_def
+        else:
+            return None
+
+    return PydanticTool(
+        function=wrap_tool_func_for_pydantic(tool),
+        name=tool.name,
+        description=tool.description,
+        takes_ctx=True,
+        prepare=enable_tool,
+    )
+
+
 def wrap_tool_func_for_pydantic(
-    tool: Tool, system_prompt_builder: Callable[[], Awaitable[str]]
+    tool: Tool
 ) -> Callable[..., Awaitable[str]]:
     """
-    Decorate the tool function with a wrapper that:
-    - Has a signature defined by the tool input schema
-    - Forces a rebuild of the system prompt if updates_system_prompt is True
+    Decorate the tool function with a wrapper that has a signature defined by the tool input schema
     This function can then be provided to PydanticAI as a tool function
     """
     # Check if the tool function has a `ctx: RunContext` arg
@@ -68,11 +89,6 @@ def wrap_tool_func_for_pydantic(
             kwargs["ctx"] = ctx
 
         result = await tool.call(**kwargs)
-
-        if tool.updates_context_data:
-            system_prompt_part = ctx.messages[0].parts[0]
-            assert isinstance(system_prompt_part, SystemPromptPart)
-            system_prompt_part.content = await system_prompt_builder()
 
         return result
 
@@ -98,31 +114,6 @@ def wrap_tool_func_for_pydantic(
     _wrapper.__qualname__ = tool.function.__qualname__
 
     return _wrapper
-
-
-def to_pydanticai_tool(
-    tool: Tool, system_prompt_builder: Callable[[], Awaitable[str]], enabled: bool | Callable[[], bool] = True
-) -> PydanticTool:
-    # Tool preparation function to only enable the tool when its capability is enabled
-    async def enable_tool(ctx: RunContext, tool_def: ToolDefinition) -> ToolDefinition | None:
-        # Need to dynamically evaluate the enabler function each time
-        if callable(enabled):
-            _enabled = enabled()
-        else:
-            _enabled = enabled
-
-        if _enabled:
-            return tool_def
-        else:
-            return None
-
-    return PydanticTool(
-        function=wrap_tool_func_for_pydantic(tool, system_prompt_builder),
-        name=tool.name,
-        description=tool.description,
-        takes_ctx=True,
-        prepare=enable_tool,
-    )
 
 
 def map_json_type_to_python(prop_schema: ParameterSpec) -> Type[Any] | Any:

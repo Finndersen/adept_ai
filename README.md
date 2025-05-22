@@ -180,11 +180,9 @@ async def run_pydantic_ai(prompt: str, model_name: str | None, api_key: str | No
     async with get_agent_builder() as builder:
         agent = Agent(model=model, tools=await get_pydantic_ai_tools(builder), instrument=True)
 
-        # Configure the dynamic system prompt (evaluated for each new agent.run(), but not within it)
-        @agent.system_prompt(dynamic=True)
-        async def system_prompt() -> str:
-            return await builder.get_system_prompt()
-
+        # Configure the dynamic system prompt
+        agent.instructions(builder.get_system_prompt)
+        
         response = await agent.run(prompt)
 
         print(f"AI Agent: {response.output}")
