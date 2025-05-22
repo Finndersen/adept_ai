@@ -1,30 +1,29 @@
-# Agent Builder
+# Adept AI
 
-Easily create self-evolving AI agents that can choose what capabilities they need to dynamically update their instructions, context data and tools. 
+Create evolving AI agents that can choose what capabilities they need to complete a task, dynamically updating their instructions, context data and tools. 
 
-An agent is configured with many capabilities but chooses only the ones it needs to get its job done, allowing it to complete a broad range of tasks but not get overwhelmed by context and tool choice. 
+Use MCP servers as capabilities with flexible customization of tools and resources to be included. All the complexity of MCP session lifecycle management, communication, tool calling, resource retrieval and server notification handling is taken care of automatically. 
 
+## Overview
 The two basic concepts involved are:
-- **Capability** - Consists of a collection of associated tools and context data, along with instructions and examples for how to use them. 
-- **AgentBuilder** - Translates a role and list of capabilities into an aggregated dynamically evolving [system prompt](src/dev_ai/prompt_template.md) and set of tools that can be used to define an AI agent's behaviour. 
+- **Capability** - A collection of associated tools and context data, along with instructions and examples for how to use them. 
+- **AgentBuilder** - Translates a role and set of capabilities into an aggregated dynamically evolving [system prompt](src/dev_ai/prompt_template.md) and set of tools that can be used to define an AI agent's behaviour. 
 
-MCP-based capabilities enable super-simple and flexible integration of one or many MCP servers with your agent. All the complexity of MCP session lifecycle management, communication, tool calling, resource retrieval and server notification handling is taken care of automatically.  
+An agent can be configured with many capabilities to handle a broad range of tasks, without getting overwhelmed by context and tool choice since it can enable only the capabilities it needs to get its job done.
 
-Works alongside your favourite agent framework, or greatly simplifies the process of building powerful AI agents directly with a model provider's SDK or API. 
+Integrates with your favourite agent framework, or greatly simplifies the process of building powerful AI agents directly with a model provider's SDK or API. 
 
 ![diagram](diagram.png)
 
-## Usage & Examples
+## Example
 
-### Defining and using AgentBuilder
 
 ```py
 import os
 from dev_ai.agent_builder import AgentBuilder
 from dev_ai.capabilities import FileSystemCapability, StdioMCPCapability
 
-ROLE = """You are a helpful assistant with strong software development and engineering skills,
-whose purpose is to help the user with their software development or general computer use needs."""
+ROLE = "You are a helpful assistant with access to a range of capabilities that you should use to complete the user's request"
 
 agent_builder = AgentBuilder(
     role=ROLE,
@@ -50,11 +49,35 @@ agent_builder = AgentBuilder(
         ),
     ],
 )
-# The capabilities are disabled by default so initially the only tool will be `enable_capabilities()`
+# Provides an `enable_capabilities()` tool along with tools belonging to all enabled capabilities
 tools = await agent_builder.get_tools()
+# Generates dynamic system prompt that includes instructions and usage examples of each enabled capability
 system_prompt = await agent_builder.get_system_prompt()
 ```
 
+## Features
+
+### General
+- Fully typed and async
+- Customizable [system prompt template](src/dev_ai/prompt_template.md)
+- Helpful utilities for compatibility with LangGraph & PydanticAI frameworks and OpenAI SDK
+- Auto-create tools from existing sync or async functions/methods
+- Built-in Filesystem capability with dynamically updating directory tree context data
+
+
+### MCP Capabilities
+- Choose which tools and resources to provide to the agent
+- Add description, instructions and usage examples to help agent use MCP tools reliably
+- Supports multiple concurrent MCP servers with advanced MCP session lifecycle management including on-demand initialisation only when they are enabled. 
+- Handle server sampling requests (so MCP server can make request to LLM/agent)
+- Automatic caching of tool and resource lists, with handling of server notifications to reset caches (not even officially supported by the MCP SDK yet)
+- Easily customize the behaviour of MCP tools / resources and how they are presented to the agent (see Customise MCP Capabilities)
+
+## Installation
+
+`pip install adept-ai`
+
+## Usage Examples
 ### Using with OpenAI SDK
 Includes an `OpenAITools` helper class to translate tools to OpenAI SDK format and handle tool execution. 
 ```py
@@ -166,29 +189,7 @@ async def run_pydantic_ai(prompt: str, model_name: str | None, api_key: str | No
 ```
 [See code here.](src/examples/pydantic_ai/run.py)
 
-## Features
-
-### General
-- Can be used for both one-shot agents or longer running conversational style ones with state
-- Fully typed and async
-- Customizable [system prompt template](src/dev_ai/prompt_template.md)
-- Helpful utilities for compatibility with LangGraph & PydanticAI frameworks and OpenAI SDK
-- Auto-create tools from existing sync or async functions/methods
-- Built-in Filesystem capability with dynamically updating directory tree context data
-
-
-### MCP Capabilities
-- Choose which tools and resources to provide to the agent
-- Add description, instructions and usage examples to help agent use MCP tools reliably
-- Advanced MCP session lifecycle management that allows MCP servers to be initialised on-demand only when they are enabled. 
-- Handle server sampling requests (so MCP server can make request to LLM/agent)
-- Automatic caching of tool and resource lists, with handling of server notifications to reset caches (not even officially supported by the MCP SDK yet)
-- Easily customize the behaviour of MCP tools / resources and how they are presented to the agent (see Customise MCP Capabilities)
-
-## Installation
-
-Instructions on how to install and set up your project.
-
+## Advanced
 
 ### Customise MCP Capabilities
 
