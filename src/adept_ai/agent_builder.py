@@ -6,8 +6,8 @@ from typing import Self
 
 from jinja2 import Template
 
-from dev_ai.capabilities import Capability
-from dev_ai.tool import ParameterSpec, Tool, ToolError
+from adept_ai.capabilities import Capability
+from adept_ai.tool import ParameterSpec, Tool, ToolError
 
 DEFAULT_PROMPT_TEMPLATE = Path(__file__).resolve().parent / "prompt_template.md"
 

@@ -3,8 +3,8 @@ import json
 import pytest
 from openai.types.responses import ResponseFunctionToolCall
 
-from dev_ai.compat.openai import OpenAITools
-from dev_ai.tool import Tool
+from adept_ai.compat.openai import OpenAITools
+from adept_ai.tool import Tool
 
 
 class TestOpenAITools:

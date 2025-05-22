@@ -12,7 +12,7 @@ from rich.markdown import Markdown
 
 
 def main():
-    """Command-line interface for dev_ai."""
+    """Command-line interface for adept_ai."""
     parser = argparse.ArgumentParser(description="Run an AI development assistant with a specified LLM model.")
 
     parser.add_argument(
@@ -64,8 +64,8 @@ def main():
     rich_handler = RichHandler(rich_tracebacks=True)
     root_logger.addHandler(rich_handler)
 
-    # Get the dev_ai logger (will inherit the root logger's handler)
-    logger = logging.getLogger("dev_ai")
+    # Get the adept_ai logger (will inherit the root logger's handler)
+    logger = logging.getLogger("adept_ai")
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
     # Run the assistant

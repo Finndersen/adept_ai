@@ -3,9 +3,9 @@ from typing import Annotated
 
 import aiofiles
 
-from dev_ai.capabilities.base import Capability
-from dev_ai.capabilities.filesystem.directory_tree import DirectoryTree
-from dev_ai.tool import Tool, ToolError
+from adept_ai.capabilities.base import Capability
+from adept_ai.capabilities.filesystem.directory_tree import DirectoryTree
+from adept_ai.tool import Tool, ToolError
 from examples.console import console
 
 

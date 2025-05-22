@@ -12,9 +12,9 @@ from mcp.client.streamable_http import streamablehttp_client
 from mcp.types import TextResourceContents
 from pydantic import AnyUrl
 
-from dev_ai.capabilities import Capability
-from dev_ai.tool import Tool, ToolInputSchema
-from dev_ai.utils import cached_method
+from adept_ai.capabilities import Capability
+from adept_ai.tool import Tool, ToolInputSchema
+from adept_ai.utils import cached_method
 
 from .lifecycle_manager import MCPLifecycleManager, UninitialisedMCPSessionError
 

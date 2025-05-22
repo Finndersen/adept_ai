@@ -1,7 +1,7 @@
 from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.prebuilt import create_react_agent
 
-from dev_ai.compat.langchain import tool_to_langchain_tool
+from adept_ai.compat.langchain import tool_to_langchain_tool
 from examples.agent_builder import get_agent_builder
 from examples.langchain.models import get_model_from_name_and_api_key
 

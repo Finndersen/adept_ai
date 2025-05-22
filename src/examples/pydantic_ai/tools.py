@@ -6,7 +6,7 @@ from pydantic_ai import RunContext
 from pydantic_ai.common_tools.duckduckgo import DuckDuckGoResult, DuckDuckGoSearchTool
 from rich.prompt import Confirm
 
-from dev_ai.tool import ToolError
+from adept_ai.tool import ToolError
 from examples.console import console
 from examples.pydantic_ai.deps import AgentDeps
 

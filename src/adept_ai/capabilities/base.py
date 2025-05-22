@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import Self
 
-from dev_ai.tool import Tool
+from adept_ai.tool import Tool
 
 
 class Capability(ABC):

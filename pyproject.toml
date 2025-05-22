@@ -3,11 +3,11 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dev_ai"
+name = "adept_ai"
 version = "0.1.0"
-description = "A short description of your project"
+description = "A framework for building dynamically evolving AI agents."
 requires-python = ">=3.12"
-authors = [{ name = "Your Name", email = "your.email@example.com" }]
+authors = [{ name = "Finn Andersen", email = "finndersen@gmail.com" }]
 dependencies = [
     "pydantic",
     "pydantic-ai-slim[logfire]>=0.2.4",
@@ -18,9 +18,6 @@ dependencies = [
     "decorator>=5.2.1",
     "mcp[cli]>=1.8.0",
 ]
-
-[project.scripts]
-dev = "dev_ai.cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov", "ruff", "pyright", "pytest-asyncio>=0.26.0"]

@@ -8,9 +8,9 @@ from mcp import Tool as MCPTool
 from pydantic_ai import RunContext
 from pydantic_ai.messages import SystemPromptPart
 
-from dev_ai.capabilities.mcp.main import MCPCapability
-from dev_ai.compat.pydantic_ai import wrap_tool_func_for_pydantic
-from dev_ai.tool import Tool, ToolError
+from adept_ai.capabilities.mcp.main import MCPCapability
+from adept_ai.compat.pydantic_ai import wrap_tool_func_for_pydantic
+from adept_ai.tool import Tool, ToolError
 
 # Define a type variable for testing generic RunContext
 T = TypeVar("T")

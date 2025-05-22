@@ -5,7 +5,7 @@ from openai import AsyncOpenAI
 from openai.types.responses import EasyInputMessageParam, ResponseFunctionToolCallParam
 from openai.types.responses.response_input_param import ResponseInputParam
 
-from dev_ai.compat.openai import OpenAITools
+from adept_ai.compat.openai import OpenAITools
 from examples.agent_builder import get_agent_builder
 
 

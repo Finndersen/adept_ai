@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from langchain_core.tools.structured import StructuredTool as LangChainTool
 
-from dev_ai.tool import Tool
+from adept_ai.tool import Tool
 
 
 def tool_to_langchain_tool(tool: Tool) -> LangChainTool:

@@ -1,7 +1,7 @@
 import os
 
-from dev_ai.agent_builder import AgentBuilder
-from dev_ai.capabilities import FileSystemCapability, StdioMCPCapability
+from adept_ai.agent_builder import AgentBuilder
+from adept_ai.capabilities import FileSystemCapability, StdioMCPCapability
 
 ROLE = """You are a helpful assistant with strong software development and engineering skills,
 whose purpose is to help the user with their software development or general computer use needs."""

@@ -2,7 +2,7 @@ import asyncio
 from contextlib import _AsyncGeneratorContextManager
 from typing import Any, Awaitable, Callable
 
-from dev_ai.capabilities.mcp.client_session import CustomClientSession
+from adept_ai.capabilities.mcp.client_session import CustomClientSession
 
 
 class UninitialisedMCPSessionError(Exception):

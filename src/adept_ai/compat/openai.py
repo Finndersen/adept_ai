@@ -4,7 +4,7 @@ from typing import Any, Iterable
 from openai.types.responses import FunctionToolParam, ResponseFunctionToolCall
 from openai.types.responses.response_input_param import FunctionCallOutput
 
-from dev_ai.tool import Tool
+from adept_ai.tool import Tool
 
 
 class OpenAITools:

@@ -1,4 +1,4 @@
-# Adept AI
+# AdeptAI
 
 Create evolving AI agents that can choose what capabilities they need to complete a task, dynamically updating their instructions, context data and tools. 
 
@@ -7,7 +7,7 @@ Use MCP servers as capabilities with flexible customization of tools and resourc
 ## Overview
 The two basic concepts involved are:
 - **Capability** - A collection of associated tools and context data, along with instructions and examples for how to use them. 
-- **AgentBuilder** - Translates a role and set of capabilities into an aggregated dynamically evolving [system prompt](src/dev_ai/prompt_template.md) and set of tools that can be used to define an AI agent's behaviour. 
+- **AgentBuilder** - Translates a role and set of capabilities into an aggregated dynamically evolving [system prompt](src/adept_ai/prompt_template.md) and set of tools that can be used to define an AI agent's behaviour. 
 
 An agent can be configured with many capabilities to handle a broad range of tasks, without getting overwhelmed by context and tool choice since it can enable only the capabilities it needs to get its job done.
 
@@ -17,11 +17,9 @@ Integrates with your favourite agent framework, or greatly simplifies the proces
 
 ## Example
 
-
 ```py
 import os
-from dev_ai.agent_builder import AgentBuilder
-from dev_ai.capabilities import FileSystemCapability, StdioMCPCapability
+from adept_ai import AgentBuilder, FileSystemCapability, StdioMCPCapability
 
 ROLE = "You are a helpful assistant with access to a range of capabilities that you should use to complete the user's request"
 
@@ -34,7 +32,7 @@ agent_builder = AgentBuilder(
             name="AccuWeather",
             description="Get weather data from AccuWeather, a weather forecasting and weather information service.",
             command="npx",
-            args=["-y",  "@timlukahorstmann/mcp-weather"],
+            args=["-y", "@timlukahorstmann/mcp-weather"],
             env={"ACCUWEATHER_API_KEY": os.getenv("ACCUWEATHER_API_KEY", "")},
             instructions=["Use a sessionId of '123' when calling tools that require one."]
         ),
@@ -45,7 +43,8 @@ agent_builder = AgentBuilder(
             command="npx",
             args=["@gongrzhe/server-gmail-autoauth-mcp"],
             tools=["search_emails", "read_email", "send_email", "delete_email", "batch_delete_emails"],
-            instructions=["Use `older_than:` or `newer_than:` instead of `after:` and `before:` for relative time queries"],
+            instructions=[
+                "Use `older_than:` or `newer_than:` instead of `after:` and `before:` for relative time queries"],
         ),
     ],
 )
@@ -59,7 +58,7 @@ system_prompt = await agent_builder.get_system_prompt()
 
 ### General
 - Fully typed and async
-- Customizable [system prompt template](src/dev_ai/prompt_template.md)
+- Customizable [system prompt template](src/adept_ai/prompt_template.md)
 - Helpful utilities for compatibility with LangGraph & PydanticAI frameworks and OpenAI SDK
 - Auto-create tools from existing sync or async functions/methods
 - Built-in Filesystem capability with dynamically updating directory tree context data
@@ -79,13 +78,15 @@ system_prompt = await agent_builder.get_system_prompt()
 
 ## Usage Examples
 ### Using with OpenAI SDK
-Includes an `OpenAITools` helper class to translate tools to OpenAI SDK format and handle tool execution. 
+Includes an `OpenAITools` helper class to translate tools to OpenAI SDK format and handle tool execution.
+
 ```py
 from openai import AsyncOpenAI
 from openai.types.responses import EasyInputMessageParam
 
-from dev_ai.compat.openai import OpenAITools
+from adept_ai.compat.openai import OpenAITools
 from examples.agent_builder import get_agent_builder
+
 
 async def run_openai(prompt: str, model_name: str, api_key: str):
     client = AsyncOpenAI(api_key=api_key)
@@ -120,12 +121,13 @@ async def run_openai(prompt: str, model_name: str, api_key: str):
 
 ### Using with LangChain/LangGraph
 The prebuilt `create_react_agent()` does not support dynamic updating of tools within a run, so `interrupt_after` is used as a workaround to achieve this. 
-It would be possible to create a custom graph-based agent that supports this more natively. 
+It would be possible to create a custom graph-based agent that supports this more natively.
+
 ```py
 from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.prebuilt import create_react_agent
 
-from dev_ai.compat.langchain import tool_to_langchain_tool
+from adept_ai.compat.langchain import tool_to_langchain_tool
 from examples.agent_builder import get_agent_builder
 from examples.langchain.models import get_model_from_name_and_api_key
 
@@ -165,7 +167,7 @@ A custom wrapper is also added to the tools which causes the system prompt to be
 ```py
 from pydantic_ai import Agent
 
-from dev_ai.compat.pydantic_ai import get_pydantic_ai_tools
+from adept_ai.compat.pydantic_ai import get_pydantic_ai_tools
 from examples.agent_builder import get_agent_builder
 
 from examples.pydantic_ai.models import build_model_from_name_and_api_key
@@ -211,5 +213,4 @@ You can create custom `StdioMCPCapability` or `HttpMCPCapability` subclasses for
 
 
 ## License
-
-
+MIT License
