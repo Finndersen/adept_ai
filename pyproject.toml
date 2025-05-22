@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "adept_ai"
 version = "0.1.0"
-description = "A framework for building dynamically evolving AI agents."
+description = "Framework for creating dynamic AI agents with access to broad range of capabilities."
 requires-python = ">=3.12"
 authors = [{ name = "Finn Andersen", email = "finndersen@gmail.com" }]
 dependencies = [
     "pydantic",
-    "pydantic-ai-slim[logfire]>=0.2.4",
+    "pydantic-ai-slim[logfire]>=0.2.6",
     "rich",
     "python-dotenv",
     "aiofiles",
@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "ruff", "pyright", "pytest-asyncio>=0.26.0"]
+dev = ["pytest", "pytest-cov", "ruff", "pyright", "pytest-asyncio>=0.26.0", "twine"]
 langchain = ["langchain>=0.3.25", "langgraph>=0.4.1", "langchain-google-genai>=2.1.4", "langchain-anthropic>=0.3.13", "langchain-openai>=0.3.17"]
 openai = ["openai>=1.0.0"]
 pydantic_ai = ["pydantic-ai[logfire]>=0.1.9"]
@@ -54,7 +54,3 @@ reportMissingImports = true
 reportMissingTypeStubs = false
 pythonVersion = "3.12"
 pythonPlatform = "Darwin"
-
-[[tool.uv.index]]
-url = "https://pypi-256045177368.d.codeartifact.eu-west-1.amazonaws.com/pypi/pypi/simple/"
-default = true

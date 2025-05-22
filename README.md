@@ -2,7 +2,7 @@
 
 Create evolving AI agents that can choose what capabilities they need to complete a task, dynamically updating their instructions, context data and tools. 
 
-Use MCP servers as capabilities with flexible customization of tools and resources to be included. All the complexity of MCP session lifecycle management, communication, tool calling, resource retrieval and server notification handling is taken care of automatically. 
+Use MCP servers as capabilities with flexible customization of which tools and resources to include. All the complexity of MCP session lifecycle management, communication, tool calling, resource retrieval and server notification handling is taken care of automatically. 
 
 ## Overview
 The two basic concepts involved are:

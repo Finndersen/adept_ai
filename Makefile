@@ -24,3 +24,10 @@ format:
 # Run tests with coverage
 test:
 	pytest --cov=src tests/
+
+build:
+	uv build
+
+publish:
+	uv publish
+
