@@ -71,3 +71,52 @@ class Capability(ABC):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.teardown()
+
+
+class ProvidedConfigCapability(Capability):
+    """
+    Base class for a capability with provided configuration.
+
+    This capability allows you to specify:
+    - Name and description for the capability
+    - Instructions for using the capability
+    - Usage examples for the capability
+    """
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        instructions: list[str] = None,
+        usage_examples: list[str] = None,
+        enabled: bool = False,
+    ):
+        """
+        Initialize the ProvidedConfigCapability.
+
+        Args:
+            name: Name of the capability
+            description: Description of the capability
+            instructions: List of instructions for using the capability
+            usage_examples: List of usage examples for the capability
+            enabled: Whether the capability is initially enabled
+        """
+        super().__init__(enabled=enabled)
+        self.name = name
+        self.description = description
+        self._instructions = instructions or []
+        self._usage_examples = usage_examples or []
+
+    @property
+    def instructions(self) -> list[str] | None:
+        """
+        Returns the list of instructions for the capability.
+        """
+        return self._instructions
+
+    @property
+    def usage_examples(self) -> list[str]:
+        """
+        Returns the list of usage examples for the capability.
+        """
+        return self._usage_examples

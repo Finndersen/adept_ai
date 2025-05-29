@@ -12,7 +12,7 @@ from mcp.client.streamable_http import streamablehttp_client
 from mcp.types import TextResourceContents
 from pydantic import AnyUrl
 
-from adept_ai.capabilities import Capability
+from adept_ai.capabilities import ProvidedConfigCapability
 from adept_ai.tool import Tool, ToolInputSchema
 from adept_ai.utils import cached_method
 
@@ -31,7 +31,7 @@ class MCPResource:
 ResourceURIChecker = Callable[[AnyUrl], bool]
 
 
-class MCPCapability(Capability):
+class MCPCapability(ProvidedConfigCapability):
     """
     Base class for a capability which provides access to an MCP server's resources and tools.
     Features:
@@ -80,12 +80,15 @@ class MCPCapability(Capability):
         :param logging_callback: Callback function to be called to handle a logging event from the MCP server.
         :param enabled: Whether the capability is initially enabled.
         """
-        self.name = name
-        self.description = description
+        super().__init__(
+            name=name,
+            description=description,
+            instructions=instructions,
+            usage_examples=usage_examples,
+            **kwargs
+        )
         self._allowed_tools = tools
         self._include_resources = resources
-        self._instructions = instructions or []
-        self._usage_examples = usage_examples or []
         self._context_active = False  # Whether parent AgentBuilder or this capability's context manager is active
         self._mcp_lifecycle_manager = MCPLifecycleManager(
             mcp_client,
@@ -94,15 +97,6 @@ class MCPCapability(Capability):
             sampling_callback=sampling_callback,
             logging_callback=logging_callback,
         )
-        super().__init__(**kwargs)
-
-    @property
-    def instructions(self) -> list[str] | None:
-        return self._instructions
-
-    @property
-    def usage_examples(self) -> list[str] | None:
-        return self._usage_examples
 
     ## MCP Client & Session management ##
     @property
