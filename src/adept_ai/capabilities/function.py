@@ -39,7 +39,7 @@ class FunctionToolsCapability(ProvidedConfigCapability):
             description=description,
             instructions=instructions,
             usage_examples=usage_examples,
-            enabled=enabled
+            enabled=enabled,
         )
 
         # Convert functions to tools immediately
@@ -48,10 +48,7 @@ class FunctionToolsCapability(ProvidedConfigCapability):
             if isinstance(item, Tool):
                 tool = item
             else:
-                tool = Tool.from_function(
-                    function=item,
-                    name_prefix=self.name
-                )
+                tool = Tool.from_function(function=item, name_prefix=self.name)
             self._tools.append(tool)
 
     async def get_tools(self) -> list[Tool]:

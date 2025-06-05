@@ -98,6 +98,9 @@ class Tool(BaseModel):
 
         return result
 
+    async def __call__(self, **kwargs) -> str:
+        return await self.call(**kwargs)
+
 
 class ToolError(Exception):
     """Exception raised when a tool function fails."""

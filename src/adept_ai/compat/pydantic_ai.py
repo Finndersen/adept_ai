@@ -5,7 +5,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, Union, 
 from pydantic_ai import RunContext
 from pydantic_ai import Tool as PydanticTool
 from pydantic_ai._pydantic import takes_ctx
-from pydantic_ai.tools import ToolDefinition, ToolsPrepareFunc
+from pydantic_ai.tools import ToolDefinition
 
 from adept_ai.agent_builder import AgentBuilder
 from adept_ai.capabilities import Capability
@@ -49,9 +49,7 @@ async def get_pydantic_ai_tools(agent_builder: AgentBuilder) -> list[PydanticToo
     return tools
 
 
-def to_pydanticai_tool(
-    tool: Tool, enabled: bool | Callable[[], bool] = True
-) -> PydanticTool:
+def to_pydanticai_tool(tool: Tool, enabled: bool | Callable[[], bool] = True) -> PydanticTool:
     # Tool preparation function to only enable the tool when its capability is enabled
     async def enable_tool(ctx: RunContext, tool_def: ToolDefinition) -> ToolDefinition | None:
         # Need to dynamically evaluate the enabler function each time
@@ -74,9 +72,7 @@ def to_pydanticai_tool(
     )
 
 
-def wrap_tool_func_for_pydantic(
-    tool: Tool
-) -> Callable[..., Awaitable[str]]:
+def wrap_tool_func_for_pydantic(tool: Tool) -> Callable[..., Awaitable[str]]:
     """
     Decorate the tool function with a wrapper that has a signature defined by the tool input schema
     This function can then be provided to PydanticAI as a tool function
@@ -84,7 +80,7 @@ def wrap_tool_func_for_pydantic(
     # Check if the tool function has a `ctx: RunContext` arg
     has_ctx_param = takes_ctx(tool.function)
 
-    async def _wrapper(ctx: RunContext, **kwargs) -> str:
+    async def _wrapper(ctx: RunContext, **kwargs: Any) -> str:
         if has_ctx_param:
             kwargs["ctx"] = ctx
 

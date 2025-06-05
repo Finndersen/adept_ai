@@ -128,7 +128,7 @@ class MCPLifecycleManager:
             if self._lifecycle_task and self._lifecycle_task.done():  # ensure task is awaited if it failed early
                 try:
                     await self._lifecycle_task
-                except:
+                except Exception:
                     pass  # ignore exceptions here, we are just ensuring it's awaited
             return
 

@@ -29,14 +29,14 @@ class TestWrapToolFuncForPydantic:
     @pytest.mark.asyncio
     async def test_wrap_tool_func_without_ctx(self, mock_ctx):
         """Test wrapping a tool function without ctx parameter."""
-    
+
         # Define a simple tool function without ctx
         async def sample_function(param1: str, param2: float = 0) -> str:
             return f"Result: {param1}, {param2}"
-    
+
         # Create a tool from the function
         tool = Tool.from_function(sample_function, name_prefix="Test")
-    
+
         # Wrap the tool function
         wrapped_func = wrap_tool_func_for_pydantic(tool)
 
@@ -54,15 +54,15 @@ class TestWrapToolFuncForPydantic:
     @pytest.mark.asyncio
     async def test_wrap_tool_func_with_ctx(self, mock_ctx):
         """Test wrapping a tool function with ctx parameter."""
-    
+
         # Define a tool function with ctx
         async def sample_function_with_ctx(ctx: RunContext, param1: str) -> str:
             # We can verify ctx was passed by using it in the return value
             return f"Result with ctx: {param1} (ctx: {id(ctx)})"
-    
+
         # Create a tool from the function
         tool = Tool.from_function(sample_function_with_ctx, name_prefix="Test")
-    
+
         # Wrap the tool function
         wrapped_func = wrap_tool_func_for_pydantic(tool)
 
@@ -78,17 +78,16 @@ class TestWrapToolFuncForPydantic:
         # The result should contain the id of the mock_ctx object
         assert f"Result with ctx: test (ctx: {id(mock_ctx)})" == result
 
-
     async def test_wrap_tool_func_handles_errors(self, mock_ctx):
         """Test that the wrapped function properly handles errors from the tool function."""
-    
+
         # Define a tool function that raises an error
         async def failing_function(param1: str) -> str:
             raise ToolError("Test error message")
-    
+
         # Create a tool from the function
         tool = Tool.from_function(failing_function, name_prefix="Test")
-    
+
         # Wrap the tool function
         wrapped_func = wrap_tool_func_for_pydantic(tool)
 
@@ -102,7 +101,7 @@ class TestWrapToolFuncForPydantic:
     @pytest.mark.asyncio
     async def test_wrap_tool_func_with_mcptool(self, mock_ctx):
         """Test wrapping a Tool instance created with mcptool_to_tool()."""
-    
+
         # Create a mock MCP tool
         mcp_tool = MCPTool(
             name="test_mcp_tool",
@@ -113,16 +112,16 @@ class TestWrapToolFuncForPydantic:
                 "required": ["param1"],
             },
         )
-    
+
         # Create a mock MCP session with call_tool() method
         tool_result = MagicMock(content=[MagicMock(text="MCP tool result")], isError=False)
         mock_mcp_session = MagicMock(spec=ClientSession, call_tool=AsyncMock(return_value=tool_result))
-    
+
         # Create a Tool instance from the MCPTool definition
         mcp_capability = MCPCapability(name="test", description="test", mcp_client=None)
         mcp_capability._mcp_lifecycle_manager = MagicMock(mcp_session=mock_mcp_session, active=True)
         tool = mcp_capability.mcptool_to_tool(mcp_tool)
-    
+
         # Wrap the tool function
         wrapped_func = wrap_tool_func_for_pydantic(tool)
 
@@ -145,22 +144,22 @@ class TestWrapToolFuncForPydantic:
     @pytest.mark.asyncio
     async def test_wrap_tool_func_with_mcptool_error(self, mock_ctx):
         """Test wrapping a Tool instance created with mcptool_to_tool() that returns an error."""
-    
+
         # Create a mock MCP tool
         mcp_tool = MagicMock(spec=MCPTool)
         mcp_tool.name = "test_mcp_tool_error"
         mcp_tool.description = "Test MCP tool description"
         mcp_tool.inputSchema = {"type": "object", "properties": {"param1": {"type": "string"}}, "required": ["param1"]}
-    
+
         # Create a mock MCP session with call_tool() method that returns error result
         tool_result = MagicMock(content=[MagicMock(text="Something went wrong")], isError=True)
         mock_mcp_session = MagicMock(spec=ClientSession, call_tool=AsyncMock(return_value=tool_result))
-    
+
         # Create a Tool instance from the MCPTool definition
         mcp_capability = MCPCapability(name="test", description="test", mcp_client=None)
         mcp_capability._mcp_lifecycle_manager = MagicMock(mcp_session=mock_mcp_session, active=True)
         tool = mcp_capability.mcptool_to_tool(mcp_tool)
-    
+
         # Wrap the tool function
         wrapped_func = wrap_tool_func_for_pydantic(tool)
 

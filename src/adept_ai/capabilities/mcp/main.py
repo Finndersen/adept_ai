@@ -47,6 +47,9 @@ class MCPCapability(ProvidedConfigCapability):
     async with StdioMCPCapability(...) as mcp_client:
         tools = mcp_client.get_tools()
 
+        first_tool = tools[0]
+        result = await first_tool.call(arg1="foo", arg2="bar")
+
         resources = await mcp_client.list_all_resources()
         for resource in resources:
             resource_content = await mcp_client.read_resource(resource.uri)
@@ -81,11 +84,7 @@ class MCPCapability(ProvidedConfigCapability):
         :param enabled: Whether the capability is initially enabled.
         """
         super().__init__(
-            name=name,
-            description=description,
-            instructions=instructions,
-            usage_examples=usage_examples,
-            **kwargs
+            name=name, description=description, instructions=instructions, usage_examples=usage_examples, **kwargs
         )
         self._allowed_tools = tools
         self._include_resources = resources
@@ -103,7 +102,7 @@ class MCPCapability(ProvidedConfigCapability):
     def mcp_session(self) -> ClientSession:
         if not self._mcp_lifecycle_manager.active:
             raise UninitialisedMCPSessionError(
-                "Must initialise MCP session before retrieving tools or resources. Use the AgentBuilder as a context manager"
+                "Must initialise MCP session before retrieving tools or resources. Use the AgentBuilder or capability as a context manager."
             )
         return self._mcp_lifecycle_manager.mcp_session
 

@@ -11,7 +11,7 @@ from examples.agent_builder import get_agent_builder
 
 async def run_openai(prompt: str, model_name: str | None, api_key: str | None = None) -> str:
     """
-    Run an OpenAI model directly using the OpenAI SDK.
+    Run an OpenAI model directly using the OpenAI SDK Responses API.
 
     Args:
         prompt: The user's prompt to send to the model
