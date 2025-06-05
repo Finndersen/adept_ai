@@ -33,7 +33,7 @@ async def run_openai(prompt: str, model_name: str | None, api_key: str | None = 
             response = await client.responses.create(
                 model=model_name,
                 input=[EasyInputMessageParam(role="system", content=system_prompt)] + message_history,
-                tools=openai_tools.get_tool_params(),
+                tools=openai_tools.get_responses_tools(),
             )
 
             for output in response.output:

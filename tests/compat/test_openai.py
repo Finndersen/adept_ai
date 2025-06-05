@@ -36,7 +36,7 @@ class TestOpenAITools:
     @pytest.mark.asyncio
     async def test_get_tool_params(self, openai_tools, sample_tools):
         """Test converting tools to OpenAI format."""
-        tool_params = openai_tools.get_tool_params()
+        tool_params = openai_tools.get_responses_tools()
 
         # Check tool params match expected data structure
         expected_params = [
