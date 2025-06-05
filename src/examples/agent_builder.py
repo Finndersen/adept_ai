@@ -2,6 +2,7 @@ import os
 
 from adept_ai.agent_builder import AgentBuilder
 from adept_ai.capabilities import FileSystemCapability, StdioMCPCapability
+from adept_ai.capabilities.composio import ComposioActionsCapability
 
 ROLE = """You are a helpful assistant with strong software development and engineering skills,
 whose purpose is to help the user with their software development or general computer use needs."""
@@ -64,5 +65,11 @@ def get_agent_builder() -> AgentBuilder:
                     "For the `list_events` tool, `timeMin` and `timeMax` must be provided in format: YYYY-MM-DDTHH:mm:ssZ e.g. 2025-05-01T00:00:00Z"
                 ],
             ),
+            ComposioActionsCapability(
+                name="WebSearch",
+                description="Search the web for information about a topic.",
+                actions=["COMPOSIO_SEARCH_SEARCH"],
+            ),
+            ComposioActionsCapability(name="GoogleSheets", apps=["GOOGLESHEETS"]),
         ],
     )
