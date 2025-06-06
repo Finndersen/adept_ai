@@ -67,6 +67,7 @@ tools = await agent_builder.get_tools()
 # Generates dynamic system prompt that includes instructions and usage examples of each enabled capability
 system_prompt = await agent_builder.get_system_prompt()
 ```
+
 This can be [easily used to make a simple agent](#usage-examples) that when provided a prompt like:
 
 > Check my calendar for upcoming events for the next 2 days, check the weather forceast in London at the time of each event, and write a  HTML file with a formatted table listing the events with weather information for each
@@ -96,20 +97,16 @@ I have created an HTML file named calendar_weather_report.html that contains a f
 
 Capabilities are configurable and stateful objects which provide a set of tools along with associated context data, instructions and usage examples.
 
-### Built-in Capabilities
-Choose from a collection of powerful built-in capabilities:
-- `FileSystemCapability` - Allows reading & writing files, with dynamically updating directory tree context data
-- More TBA
-
-### Function-Based Capabilities
-
-Use the included `FunctionToolsCapability` to conveniently create a capability with tools automatically generated from a set of provided functions. 
-
-### Custom Capabilities
-Subclass `Capability` to create your own infinitely customisable capabilities to suit your needs, with greater flexibility than `FunctionToolsCapability` such as being configurable and having state. 
-
 ### MCP Capabilities
-- Supports both STDIO (`StdioMCPCapability`) and  HTTP (`HTTPMCPCapability`) MCP servers
+
+MCP servers are a great way to add functionality and integrate with external services, but there is a lot of boilerplate and complexity involved with managing their lifecycle and interaction, especially if you want to use multiple at the same time. 
+Additionally, most agent frameworks only offer very basic MCP integration without support for flexibility or customisation. This makes MCP servers significantly less useful if they don't work exactly the way you need them to, or if models find them difficult to use reliably due to unintuitive function specifications. 
+
+In fact, models failed to reliably use tools from 3 out of 4 of the randomly chosen sample MCP servers used in the [usage example](examples/agent_builder.py) without adding usage instructions.
+
+AdeptAI's MCP-based capabilities make it easy to reliably and flexibly integrate MCP servers with your agent.
+
+- Supports both STDIO (`StdioMCPCapability`) and HTTP (`HTTPMCPCapability`) MCP servers
 - Choose which tools and resources to provide to the agent
 - Add description, instructions and usage examples to help agent use MCP tools reliably
 - Supports multiple concurrent MCP servers with advanced MCP session lifecycle management including on-demand initialisation only when they are enabled. 
@@ -117,7 +114,7 @@ Subclass `Capability` to create your own infinitely customisable capabilities to
 - Automatic caching of tool and resource lists, with handling of server notifications to reset caches (not even officially supported by the MCP SDK yet)
 - [Create custom subclasses](#customise-mcp-capabilities) to customize the behaviour of MCP tools / resources and how they are presented to the agent
 
-MCP capabilities can be used in isolation a powerful MCP clients:
+MCP capabilities can also be used in isolation as powerful MCP clients:
 
 ```py
 async with StdioMCPCapability(...) as mcp_client:
@@ -146,7 +143,27 @@ ComposioToolsCapability(
 ComposioToolsCapability(name="GoogleSheets", apps=["GOOGLESHEETS"])
 ```
 
+### Built-in Capabilities
+
+Choose from a collection of powerful built-in capabilities:
+- `FileSystemCapability` - Allows reading & writing files, with dynamically updating directory tree context data
+- `FunctionToolsCapability` - Conveniently create a capability with tools automatically generated from a set of provided functions. 
+- More TBA
+
+### Custom Capabilities
+
+Subclass `Capability` to create your own infinitely customisable capabilities to suit your needs, with greater flexibility than `FunctionToolsCapability` such as being configurable and having state. 
+
 ## Usage Examples
+
+There is an [included](examples/agent_builder.py) example AgentBuilder configuration with a collection of sample capabilities, and examples of using it with various agent frameworks.
+
+The agent can then be run via CLI using command:
+
+```
+python -m examples.cli --framework [langchain|openai|pydantic_ai] <request prompt>
+```
+
 ### Using with OpenAI SDK
 Includes an `OpenAITools` helper class to translate tools to OpenAI SDK format and handle tool execution.
 
@@ -187,7 +204,7 @@ async def run_openai(prompt: str, model_name: str, api_key: str):
                     print(f"AI Agent: {response.output_text}")
                     break
 ```
-[See code here.](src/examples/openai/run.py)
+[See code here.](examples/openai/run.py)
 
 ### Using with LangChain/LangGraph
 The prebuilt `create_react_agent()` does not support dynamic updating of tools within a run, so `interrupt_after` is used as a workaround to achieve this. 
@@ -227,7 +244,7 @@ async def run_langchain(prompt: str, model_name: str, api_key: str):
                 print(f"AI Agent: {message}")
                 break
 ```
-[See code here.](src/examples/langchain/run.py)
+[See code here.](examples/langchain/run.py)
 
 ### Using with PydanticAI
 The `get_pydantic_ai_tools()` helper function uses PydanticAI's [dynamic function tools](https://ai.pydantic.dev/tools/#tool-prepare) feature, 
@@ -252,12 +269,12 @@ async def run_pydantic_ai(prompt: str, model_name: str | None, api_key: str | No
 
         # Configure the dynamic system prompt
         agent.instructions(builder.get_system_prompt)
-        
+
         response = await agent.run(prompt)
 
         print(f"AI Agent: {response.output}")
 ```
-[See code here.](src/examples/pydantic_ai/run.py)
+[See code here.](examples/pydantic_ai/run.py)
 
 ## Advanced
 

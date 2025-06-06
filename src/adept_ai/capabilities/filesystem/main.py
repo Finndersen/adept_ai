@@ -6,7 +6,7 @@ import aiofiles
 from adept_ai.capabilities.base import Capability
 from adept_ai.capabilities.filesystem.directory_tree import DirectoryTree
 from adept_ai.tool import Tool, ToolError
-from examples.console import console
+from examples import console
 
 
 class FileSystemCapability(Capability):
