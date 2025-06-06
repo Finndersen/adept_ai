@@ -6,22 +6,31 @@ Use MCP servers as capabilities with flexible customization of which tools and r
 
 ## Overview
 The two basic concepts involved are:
-- **Capability** - A collection of associated tools and context data, along with instructions and examples for how to use them. 
+- **Capability** - A collection of associated tools and context data, along with instructions and examples for how to use them. Look [here](#capabilities) to learn about the different types.
 - **AgentBuilder** - Translates a role and set of capabilities into an aggregated dynamically evolving [system prompt](src/adept_ai/prompt_template.md) and set of tools that can be used to define an AI agent's behaviour. 
 
 An agent can be configured with many capabilities to handle a broad range of tasks, without getting overwhelmed by context and tool choice since it can enable only the capabilities it needs to get its job done.
 
-Integrates with your favourite agent framework, or greatly simplifies the process of building powerful AI agents directly with a model provider's SDK or API. 
+[Integrates with your favourite agent framework](#usage-examples), or greatly simplifies the process of building powerful AI agents directly with a model provider's SDK or API. 
 
 ![diagram](diagram.png)
 
-## Example
+## Installation
+For basic installation:
+```
+pip install adept-ai
+```
+Can also specify the following optional dependencies depending on which framework you are using: `[langchain, openai, pydantic_ai, composio]`
 
+
+## Example
+Here's an example `AgentBuilder` configuration with a combination of inbuilt, MCP-based and Composio capabilities:
 ```py
 import os
-from adept_ai import AgentBuilder, FileSystemCapability, StdioMCPCapability
+from adept_ai import AgentBuilder
+from adept_ai.capabilities FileSystemCapability, StdioMCPCapability, ComposioActionsCapability
 
-ROLE = "You are a helpful assistant with access to a range of capabilities that you should use to complete the user's request"
+ROLE = "You are a helpful assistant with access to a range of capabilities that you should use to complete the user's request."
 
 agent_builder = AgentBuilder(
     role=ROLE,
@@ -46,6 +55,11 @@ agent_builder = AgentBuilder(
             instructions=[
                 "Use `older_than:` or `newer_than:` instead of `after:` and `before:` for relative time queries"],
         ),
+        ComposioActionsCapability(
+            name="WebSearch",
+            description="Search the web for information about a topic.",
+            actions=["COMPOSIO_SEARCH_SEARCH"],
+        ),
     ],
 )
 # Provides an `enable_capabilities()` tool along with tools belonging to all enabled capabilities
@@ -53,28 +67,84 @@ tools = await agent_builder.get_tools()
 # Generates dynamic system prompt that includes instructions and usage examples of each enabled capability
 system_prompt = await agent_builder.get_system_prompt()
 ```
+This can be [easily used to make a simple agent](#usage-examples) that when provided a prompt like:
+
+> Check my calendar for upcoming events for the next 2 days, check the weather forceast in London at the time of each event, and write a  HTML file with a formatted table listing the events with weather information for each
+
+Would produce the following output (with logging enabled):
+```
+> Running tool: 'enable_capabilities' with args: {'capabilities': ['GoogleCalendar', 'AccuWeather', 'Filesystem']}
+> Starting MCP server: GoogleCalendar
+> Starting MCP server: AccuWeather
+> Running tool: 'GoogleCalendar-list_events' with args: {'timeMin': '2025-06-06T00:00:00Z', 'timeMax': '2025-06-08T00:00:00Z'}
+> Running tool: 'AccuWeather-weather-get_hourly' with args: {'location': 'London, GB', 'units': 'metric'}
+> Running tool: 'Filesystem-create_file' with args: {'path': 'calendar_weather_report.html', 'content': '<!DOCTYPE html>\n<html lang="en">...</html>'}
+> Stopping MCP server: AccuWeather 
+> Stopping MCP server: GoogleCalendar
+I have created an HTML file named calendar_weather_report.html that contains a formatted table listing your upcoming events for the next two days, along with the weather forecast in London for each event. You can open this file to view the details.       
+```
 
 ## Features
 
-### General
 - Fully typed and async
 - Customizable [system prompt template](src/adept_ai/prompt_template.md)
 - Helpful utilities for compatibility with LangGraph & PydanticAI frameworks and OpenAI SDK
 - Auto-create tools from existing sync or async functions/methods
-- Built-in Filesystem capability with dynamically updating directory tree context data
+- Built-in Filesystem 
 
+## Capabilities
+
+Capabilities are configurable and stateful objects which provide a set of tools along with associated context data, instructions and usage examples.
+
+### Built-in Capabilities
+Choose from a collection of powerful built-in capabilities:
+- `FileSystemCapability` - Allows reading & writing files, with dynamically updating directory tree context data
+- More TBA
+
+### Function-Based Capabilities
+
+Use the included `FunctionToolsCapability` to conveniently create a capability with tools automatically generated from a set of provided functions. 
+
+### Custom Capabilities
+Subclass `Capability` to create your own infinitely customisable capabilities to suit your needs, with greater flexibility than `FunctionToolsCapability` such as being configurable and having state. 
 
 ### MCP Capabilities
+- Supports both STDIO (`StdioMCPCapability`) and  HTTP (`HTTPMCPCapability`) MCP servers
 - Choose which tools and resources to provide to the agent
 - Add description, instructions and usage examples to help agent use MCP tools reliably
 - Supports multiple concurrent MCP servers with advanced MCP session lifecycle management including on-demand initialisation only when they are enabled. 
 - Handle server sampling requests (so MCP server can make request to LLM/agent)
 - Automatic caching of tool and resource lists, with handling of server notifications to reset caches (not even officially supported by the MCP SDK yet)
-- Easily customize the behaviour of MCP tools / resources and how they are presented to the agent (see Customise MCP Capabilities)
+- [Create custom subclasses](#customise-mcp-capabilities) to customize the behaviour of MCP tools / resources and how they are presented to the agent
 
-## Installation
+MCP capabilities can be used in isolation a powerful MCP clients:
 
-`pip install adept-ai`
+```py
+async with StdioMCPCapability(...) as mcp_client:
+    tools = mcp_client.get_tools()
+
+    first_tool = tools[0]
+    result = await first_tool.call(arg1="foo", arg2="bar")
+
+    resources = await mcp_client.list_all_resources()
+    for resource in resources:
+        resource_content = await mcp_client.read_resource(resource.uri)
+        print(resource_content)
+```
+
+### Composio Actions Capability
+
+The `ComposioActionsCapability` allows simple integration with a broad range of external services, by providing a set of [Composio](https://composio.dev/) actions as tools. 
+The capability description can be generated based on apps or actions if not specified.
+Example:
+```py
+ComposioToolsCapability(
+    name="WebSearch",
+    description="Search the web for information about a topic.",
+    actions=["COMPOSIO_SEARCH_SEARCH"],
+)
+ComposioToolsCapability(name="GoogleSheets", apps=["GOOGLESHEETS"])
+```
 
 ## Usage Examples
 ### Using with OpenAI SDK
