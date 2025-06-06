@@ -110,10 +110,12 @@ class MCPCapability(ProvidedConfigCapability):
     async def setup(self) -> None:
         # Start MCP client and session
         if not self._mcp_lifecycle_manager.active:
-            logger.debug(f"Starting MCP server: {self.name}")
+            logger.info(f"Starting MCP server: {self.name}")
             await self._mcp_lifecycle_manager.setup()
 
     async def teardown(self) -> None:
+        if self._mcp_lifecycle_manager.active:
+            logger.info(f"Stopping MCP server: {self.name}")
         await self._mcp_lifecycle_manager.teardown()
 
     ## TOOLS ##

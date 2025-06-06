@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 import logging
 from functools import partial
@@ -21,7 +23,7 @@ class RequiredParams(TypedDict):
 class OptionalParams(TypedDict, total=False):
     description: str
     # Only relevant to specific types
-    items: dict | list
+    items: ParameterSpec | list[ParameterSpec]
     enum: list[str] | list[int]
 
 

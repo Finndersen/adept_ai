@@ -4,7 +4,7 @@ from composio import ActionType, AppType
 from composio.client.collections import ActionModel
 from composio_openai import ComposioToolSet
 
-from adept_ai import ProvidedConfigCapability
+from adept_ai.capabilities import ProvidedConfigCapability
 from adept_ai.tool import Tool, ToolInputSchema
 
 

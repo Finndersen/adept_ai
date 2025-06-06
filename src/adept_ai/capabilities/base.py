@@ -44,6 +44,9 @@ class Capability(ABC):
         return ""
 
     async def enable(self) -> None:
+        if self.enabled:
+            return
+
         self.enabled = True
         await self.setup()
 

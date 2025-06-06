@@ -1,8 +1,7 @@
 import os
 
 from adept_ai.agent_builder import AgentBuilder
-from adept_ai.capabilities import FileSystemCapability, StdioMCPCapability
-from adept_ai.capabilities.composio import ComposioActionsCapability
+from adept_ai.capabilities import ComposioActionsCapability, FileSystemCapability, StdioMCPCapability
 
 ROLE = """You are a helpful assistant with strong software development and engineering skills,
 whose purpose is to help the user with their software development or general computer use needs."""
@@ -36,7 +35,7 @@ def get_agent_builder() -> AgentBuilder:
                 description="Access my Gmail account to read and send emails.",
                 command="npx",
                 args=["@gongrzhe/server-gmail-autoauth-mcp"],
-                tools=["search_emails", "read_email", "send_email", "delete_email", "batch_delete_emails"],
+                tools=["search_emails", "read_email", "draft_email", "send_email", "batch_delete_emails"],
                 instructions=[
                     "Use `older_than:` or `newer_than:` instead of `after:` and `before:` for relative time queries"
                 ],
