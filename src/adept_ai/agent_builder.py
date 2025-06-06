@@ -14,6 +14,10 @@ DEFAULT_PROMPT_TEMPLATE = Path(__file__).resolve().parent / "prompt_template.md"
 logger = logging.getLogger(__name__)
 
 
+class InvalidCapabilityName(Exception):
+    pass
+
+
 class AgentBuilder:
     """
     Class which uses an agent's identity and capabilities to build a dynamic system prompt and list of tools
@@ -39,36 +43,50 @@ class AgentBuilder:
 
     def get_enable_capabilities_tool(self) -> Tool:
         """
-        Returns a tool which enables or disables a capability
+        Returns a tool which enables capabilities
         """
         return Tool(
-            name="enable_capability",
-            description="Enable a capability",
+            name="enable_capabilities",
+            description="Enable a set of capabilities",
             input_schema={
                 "type": "object",
                 "properties": {
-                    "name": ParameterSpec(
-                        type="string",
-                        description="The name of the capability to enable",
-                        enum=[capability.name for capability in self.disabled_capabilities],
+                    "capabilities": ParameterSpec(
+                        type="array",
+                        description="The names of the capabilities to enable.",
+                        items=ParameterSpec(
+                            type="string", enum=[capability.name for capability in self.disabled_capabilities]
+                        ),
                     )
                 },
-                "required": ["name"],
+                "required": ["capabilities"],
             },
-            function=self.enable_capability,
+            function=self._enable_capabilities_tool_function,
             updates_context_data=True,
         )
 
-    async def enable_capability(self, name: str) -> str:
+    async def _enable_capabilities_tool_function(self, capabilities: list[str]) -> str:
+        """
+        Tool function for enabling the specified capabilities
+        """
+        try:
+            # Enable capabilities in parallel
+            await asyncio.gather(*(self.enable_capability(name) for name in capabilities))
+        except InvalidCapabilityName as e:
+            raise ToolError(str(e)) from e
+
+        return f"Enabled capabilities: [{', '.join(capabilities)}]"
+
+    async def enable_capability(self, name: str) -> None:
         """
         Enables a capability by name
         """
         for capability in self._capabilities:
             if capability.name.lower() == name.lower():
                 await capability.enable()
-                return f"Capability '{name}' enabled"
+                return
 
-        raise ToolError(f"Capability {name} not found")
+        raise InvalidCapabilityName(f"Capability '{name}' not found")
 
     async def enable_all_capabilities(self) -> None:
         """
