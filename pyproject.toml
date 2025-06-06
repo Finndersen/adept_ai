@@ -1,6 +1,6 @@
 [project]
 name = "adept_ai"
-version = "0.2.3"
+version = "0.2.4"
 description = "Framework for creating dynamic AI agents with access to broad range of capabilities."
 readme = "README.md"
 requires-python = ">=3.11"

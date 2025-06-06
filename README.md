@@ -1,8 +1,8 @@
 # AdeptAI
 
-Create evolving AI agents that can choose what capabilities they need to complete a task, dynamically updating their instructions, context data and tools. 
+AdeptAI is the abstraction layer between your favourite agent framework and the context (tools, system prompt and resource data) you provide to it.
 
-Use MCP servers as capabilities with flexible customization of which tools and resources to include. All the complexity of MCP session lifecycle management, communication, tool calling, resource retrieval and server notification handling is taken care of automatically. 
+Allows creating self-evolving agents that can choose from a broad range of capabilities sourced from local tools, MCP servers and other integration providers (e.g. [Composio](https://composio.dev/)), dynamically updating their context as required.
 
 ## Overview
 The two basic concepts involved are:
@@ -12,6 +12,8 @@ The two basic concepts involved are:
 An agent can be configured with many capabilities to handle a broad range of tasks, without getting overwhelmed by context and tool choice since it can enable only the capabilities it needs to get its job done.
 
 [Integrates with your favourite agent framework](#usage-examples), or greatly simplifies the process of building powerful AI agents directly with a model provider's SDK or API. 
+
+MCP-based capabilities make it easy to reliably and flexibly integrate MCP servers with your agent.
 
 ![diagram](diagram.png)
 
