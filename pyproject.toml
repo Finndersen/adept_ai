@@ -1,11 +1,8 @@
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "adept_ai"
-version = "0.2.1"
+version = "0.2.2"
 description = "Framework for creating dynamic AI agents with access to broad range of capabilities."
+readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Finn Andersen", email = "finndersen@gmail.com" }]
 dependencies = [
@@ -19,12 +16,23 @@ dependencies = [
     "mcp[cli]~=1.8.0",
 ]
 
+license = {text = "MIT"}
+
+[project.urls]
+Homepage = "https://github.com/yourusername/your-repo"
+Documentation = "https://your-docs-site"
+Source = "https://github.com/yourusername/your-repo"
+
 [project.optional-dependencies]
 dev = ["pytest", "ruff", "pyright", "pytest-asyncio>=0.26.0", "twine"]
 langchain = ["langchain~=0.3.25", "langgraph~=0.4.1", "langchain-google-genai~=2.1.4", "langchain-anthropic~=0.3.13", "langchain-openai~=0.3.17"]
 openai = ["openai~=1.0.0"]
 pydantic_ai = ["pydantic-ai[logfire]~=0.1.9"]
 composio = ["composio-core~=0.7.16", "composio-openai"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -55,3 +63,4 @@ reportMissingImports = true
 reportMissingTypeStubs = false
 pythonVersion = "3.12"
 pythonPlatform = "Darwin"
+
